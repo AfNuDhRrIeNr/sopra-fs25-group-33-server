@@ -4,17 +4,21 @@
 
 | Mapping               | Method     | Parameter              | Parameter Type | Status Code  | Response                                        | Description                  |
 |-----------------------|------------|------------------------|----------------|--------------|-------------------------------------------------|------------------------------|
-| `/users`              | GET        | filter                 | Body           | 200/404      | User-Array                                      | Retrieve User(s)             |
-| `/register`           | POST       | username, password     | Body           | 201/409      | User                                            | Add User                     |
-| `/login`              | POST       | username, password     | Body           | 200/401      | User                                            | Authorize User               |
-| `/logout`             | PUT        | token                  | Header         | 200/404      |                                                 | Updates User Status          |
-| `/users/{userId}`     | GET        | userID                 | Query          | 200/404      | User                                            | Retrieve User Profile        |
-| `/users/{userId}`     | PUT        | userID                 | Body           | 200/404      |                                                 | Update User Profile          |
-| `/games`              | POST       | userID                 | Body           | 201/409      | Game                                            | Instantiate new Game        |
-| `/games`              | PUT        | Game                   | Body           | 200/404      | Game                                            | Update Game                 |
-| `/games/starter`      | PUT        | -                      | -              | 200/404      | `{"gameId": "1234", "status": "started"}`       | Initialize WebSocket session |
-| `/games/finisher`     | PUT        | gameID                 | Body           | 200/404      | `{"gameId": "1234", "status": "finished"}`      | Finish Game                  |
-
+| `/users`              | GET        | filter                 | Body           | 200/404      | List\<User\>                                      | Retrieve User(s)             |
+| `/users/register`           | POST       | username, password     | Body           | 201/409      | User                                            | Add User                     |
+| `/users/login`              | POST       | username, password     | Body           | 200/401      | User                                            | Authorize User               |
+| `/users/logout`             | PUT        | token                  | Header         | 204/404      |  -                                              | Updates User Status          |
+| `/users/{userId}`     | GET        | userId                 | Query          | 200/404      | User                                            | Retrieve User Profile        |
+| `/users/{userId}`     | PUT        | User                   | Body           | 200/404      |  -                                               | Update User Profile          |
+| `/users/friendRequests/{userId}`| GET| userId               | Query          | 200/404      | List\<FriendRequests\>                            | Get Friend requests for a User|
+| `/users/friendRequests`| POST      |  FriendRequest         | Body           | 201/404      | FriendRequest                                   | Send new friend request     |
+| `/users/friendRequest/{requestId}` | PUT | requestId, status      | Query, Body    | 200/404      | FriendRequestStatus                             | Update status of a request|
+| `/games`              | POST       | userId                 | Body           | 201/409      | Game                                            | Instantiate new Game        |
+| `/games`              | PUT        | Game                   | Body           | 200/404      | -                                             | Update Game (players, status)     |
+| `/games/letters`      |GET         | gameId, userId, lettter   | Body           | 200/401/404  | `{"A": 5}`     | Get amount of tiles left of a game for a certain user and letter |
+| `/games/invitations`  | POST       | GameInvitation         | Body           | 201/404      | GameInvitation                             | Create a new game invitation       |
+| `/games/invitations/{userId}` | GET| userId                 | Query          | 200/404      | List\<GameInvitations\>                      | Get all game invitations for a user|
+| `games/invitations/{invitaionId}` | PUT | invitationId, status | Query, Body | 200/404      | -                                          | Change the invitation status |
 
 ---
 
@@ -27,5 +31,3 @@
 | `/queue/moveValidator/{userId}`         | SUBSCRIBE| -          | -             | `{"valid": true, "message": "Move accepted"}` | Receives response for a move validation |
 | `/gameStates/{gameId}`                  | SEND     | moveData | body        | -         | Sends a move |
 | `/topic/gameStates/{gameId}`            | SUBSCRIBE| -          | -             | `{"gameId": "1234", "state": "updated"}` | Waits for new game states |
-| `/gameStates/{gameId}/finish`           | SEND     | gameId   | path        | -         | Sends request to finish game |
-| `/topic/gameStates/{gameId}/finish`     | SUBSCRIBE| -          | -             | `{"gameId": "1234", "status": "finished"}` | Clients receive message that game ended |
