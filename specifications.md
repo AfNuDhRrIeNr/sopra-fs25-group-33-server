@@ -22,9 +22,9 @@
 
 ---
 
-## WebSocket Events
+## WebSocket API (using STOMP)
 
-| Mapping                                 | Method      | Parameter  | Parameter Type | Response  | Description |
+| Destination                                 | Method      | Parameter  | Parameter Type | Response  | Description |
 |-----------------------------------------|------------|------------|---------------|-----------|-------------|
 | `/connections`                          | SUBSCRIBE| -          | -             | `CONNECTED` | Initial WebSocket handshake |
 | `/moveValidator/{userId}`               | SEND     | moveData | body        | -         | Sends desired move for validation |
