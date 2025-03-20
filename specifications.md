@@ -29,5 +29,5 @@
 | `/connections`                          | SUBSCRIBE| -          | -             | `CONNECTED` | Initial WebSocket handshake |
 | `/moveValidator/{userId}`               | SEND     | moveData | body        | -         | Sends desired move for validation |
 | `/queue/moveValidator/{userId}`         | SUBSCRIBE| -          | -             | `{"valid": true, "message": "Move accepted"}` | Receives response for a move validation |
-| `/gameStates/{gameId}`                  | SEND     | moveData | body        | -         | Sends a move |
-| `/topic/gameStates/{gameId}`            | SUBSCRIBE| -          | -             | `{"gameId": "1234", "state": "updated"}` | Waits for new game states |
+| `/gameStates/{gameId}`                  | SEND     | moveData | body        | -         | Commits a move |
+| `/topic/gameStates/{gameId}`            | SUBSCRIBE| -          | -             | GameState | Waits for new game states |
