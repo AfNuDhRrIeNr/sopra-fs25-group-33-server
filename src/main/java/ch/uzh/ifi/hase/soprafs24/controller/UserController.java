@@ -7,6 +7,7 @@ import ch.uzh.ifi.hase.soprafs24.rest.mapper.DTOMapper;
 import ch.uzh.ifi.hase.soprafs24.service.UserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -54,4 +55,25 @@ public class UserController {
     // convert internal representation of user back to API
     return DTOMapper.INSTANCE.convertEntityToUserGetDTO(createdUser);
   }
+
+// POST /login - Authenticate a user and return their data if credentials are valid
+  @PostMapping("/users/login")
+  @ResponseStatus(HttpStatus.OK)
+  @ResponseBody
+  public UserGetDTO loginUser(@RequestBody UserPostDTO userPostDTO) {
+      // Authenticate user
+      User userInput = DTOMapper.INSTANCE.convertUserPostDTOtoEntity(userPostDTO);
+
+      User authenticatedUser = userService.authenticateUser(userInput);
+
+      // If authentication fails, throw error (makes use of UserService's method authenticateUser)
+      if (authenticatedUser == null) {
+          throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid username or password");
+      }
+
+      // Return authenticated user
+      return DTOMapper.INSTANCE.convertEntityToUserGetDTO(authenticatedUser);
+  }
+
+
 }
