@@ -54,4 +54,17 @@ public class UserController {
     // convert internal representation of user back to API
     return DTOMapper.INSTANCE.convertEntityToUserGetDTO(createdUser);
   }
+
+  @PostMapping("/games")
+  @ResponseStatus(HttpStatus.CREATED)
+  @ResponseBody
+  public GameGetDTO createGame(@RequestBody GamePostDTO gamePostDTO) {
+
+      Game gameInput = DTOMapper.INSTANCE.convertGamePostDTOtoEntity(gamePostDTO);
+
+      Game createdGame = gameService.createGame(gameInput);
+    
+      return DTOMapper.INSTANCE.convertEntityToGameGetDTO(createdGame);
+  }
+
 }
