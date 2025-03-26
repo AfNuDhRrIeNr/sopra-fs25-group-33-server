@@ -60,7 +60,6 @@ public class User implements Serializable {
   private LocalDateTime lastModified = LocalDateTime.now();
 
 
-
   public Long getId() {
     return id;
   }

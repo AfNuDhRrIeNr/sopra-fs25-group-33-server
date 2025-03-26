@@ -18,7 +18,6 @@ public class DTOMapperTest {
   public void testCreateUser_fromUserPostDTO_toUser_success() {
     // create UserPostDTO
     UserPostDTO userPostDTO = new UserPostDTO();
-    userPostDTO.setName("name");
     userPostDTO.setUsername("username");
 
     // MAP -> Create user

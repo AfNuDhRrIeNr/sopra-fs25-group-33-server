@@ -40,9 +40,11 @@ public class UserService {
   }
 
   public User createUser(User newUser) {
-    newUser.setToken(UUID.randomUUID().toString());
-    newUser.setStatus(UserStatus.OFFLINE);
+
+    //first checks if username already taken
     checkIfUserExists(newUser);
+    newUser.setToken(UUID.randomUUID().toString());
+    newUser.setStatus(UserStatus.ONLINE);
     // saves the given entity but data is only persisted in the database once
     // flush() is called
     newUser = userRepository.save(newUser);
@@ -62,13 +64,33 @@ public class UserService {
    * @throws org.springframework.web.server.ResponseStatusException
    * @see User
    */
-  private void checkIfUserExists(User userToBeCreated) {
-    User userByUsername = userRepository.findByUsername(userToBeCreated.getUsername());
-    //User userByName = userRepository.findByName(userToBeCreated.getName());
 
-    String baseErrorMessage = "The %s provided %s not unique. Therefore, the user could not be created!";
-    if (userByUsername != null) {
-      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format(baseErrorMessage, "username", "is"));
+  public void checkIfUserExists(User userToBeCreated) {
+
+    //retrieves the username if it already exists
+    User existingUser = userRepository.findByUsername(userToBeCreated.getUsername());
+
+    //generates an error message if this is the case
+    if (existingUser != null) {
+        throw new ResponseStatusException(HttpStatus.CONFLICT, "Username already exists!");
     }
+  }
+
+  public User authenticateUser(User userInput) {
+    // Find user by username
+    User user = userRepository.findByUsername(userInput.getUsername());
+
+    // If user is not found or password is incorrect, return null
+    if (user == null || !user.getPassword().equals(userInput.getPassword())) {
+        return null;
+    }
+
+    // Set status to ONLINE upon successful login
+    user.setStatus(UserStatus.ONLINE);
+    userRepository.save(user);  
+    userRepository.flush();  
+
+    // Return authenticated user with token
+    return user;
   }
 }
