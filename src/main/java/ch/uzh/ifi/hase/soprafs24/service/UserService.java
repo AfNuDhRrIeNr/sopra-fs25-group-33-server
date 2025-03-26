@@ -64,6 +64,7 @@ public class UserService {
    * @throws org.springframework.web.server.ResponseStatusException
    * @see User
    */
+
   public void checkIfUserExists(User userToBeCreated) {
 
     //retrieves the username if it already exists
