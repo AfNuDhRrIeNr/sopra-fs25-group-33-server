@@ -3,6 +3,8 @@ package ch.uzh.ifi.hase.soprafs24.rest.dto;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Queue;
+import java.util.LinkedList;
+
 
 
 public class GameGetDTO {
@@ -10,7 +12,7 @@ public class GameGetDTO {
     private List<String> users;
     private String boardBase; 
     private String host;
-    private Queue<String> userOrder;
+    private Queue<String> userOrder = new LinkedList<>();
     private String gameStatus;
     private LocalDateTime startTime;
     private List<String> moves;
@@ -28,7 +30,7 @@ public class GameGetDTO {
     public void setHost(String host) { this.host = host; }
 
     public Queue<String> getUserOrder() { return userOrder; }
-    public void setUserOrder(Queue<String> userOrder) { this.userOrder = userOrder; }
+    public void setUserOrder(Queue<String> userOrder) { this.userOrder = new LinkedList<>(userOrder); }
 
     public String getGameStatus() { return gameStatus; }
     public void setGameStatus(String gameStatus) { this.gameStatus = gameStatus; }

@@ -2,30 +2,37 @@ package ch.uzh.ifi.hase.soprafs24.entity;
 
 import javax.persistence.*;
 import java.io.Serializable;
+import java.util.List;
+import java.util.ArrayList;
+import java.time.LocalDateTime;
+import java.util.Queue;
+import java.util.LinkedList;
 
 @Entity
 @Table(name = "GAME")
-public class Game {
+public class Game implements Serializable {
+
     @Id
-    @GenerateValue
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ElementCollection
-    private List<String> users;
+    private List<String> users = new ArrayList<>();
 
-    private String boardBase;
+    private String boardBase = "DEFAULT_BOARD";
 
     private String host;
 
     @ElementCollection
-    private Queue<String> userOrder;
+    private Queue<String> userOrder = new LinkedList<>();
+ 
+    private String gameStatus = "WAITING";
 
-    private String gameStatus;
-
+    @Column(name = "start_time")
     private LocalDateTime startTime;
 
     @ElementCollection
-    private List<String> moves;
+    private List<String> moves = new ArrayList<>();
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -39,7 +46,7 @@ public class Game {
     public String getHost() { return host; }
     public void setHost(String host) { this.host = host; }
 
-    public Queue<String> getUserOrder() { return userOrder; }
+    public Queue<String> getUserOrder() { return userOrder; } 
     public void setUserOrder(Queue<String> userOrder) { this.userOrder = userOrder; }
 
     public String getGameStatus() { return gameStatus; }
