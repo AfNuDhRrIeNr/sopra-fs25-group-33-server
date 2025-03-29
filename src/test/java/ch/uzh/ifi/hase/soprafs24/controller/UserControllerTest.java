@@ -66,33 +66,6 @@ public class UserControllerTest {
         .andExpect(jsonPath("$[0].status", is(user.getStatus().toString())));
   }
 
-  @Test
-  public void createUser_validInput_userCreated() throws Exception {
-    // given
-    User user = new User();
-    user.setId(1L);
-    user.setUsername("testUsername");
-    user.setToken("1");
-    user.setStatus(UserStatus.ONLINE);
-
-    UserPostDTO userPostDTO = new UserPostDTO();
-    userPostDTO.setUsername("testUsername");
-
-    given(userService.createUser(Mockito.any())).willReturn(user);
-
-    // when/then -> do the request + validate the result
-    MockHttpServletRequestBuilder postRequest = post("/users")
-        .contentType(MediaType.APPLICATION_JSON)
-        .content(asJsonString(userPostDTO));
-
-    // then
-    mockMvc.perform(postRequest)
-        .andExpect(status().isCreated())
-        .andExpect(jsonPath("$.id", is(user.getId().intValue())))
-        .andExpect(jsonPath("$.username", is(user.getUsername())))
-        .andExpect(jsonPath("$.status", is(user.getStatus().toString())));
-  }
-
   /**
    * Helper Method to convert userPostDTO into a JSON string such that the input
    * can be processed
@@ -108,5 +81,107 @@ public class UserControllerTest {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
           String.format("The request body could not be created.%s", e.toString()));
     }
+  }
+
+  @Test
+  //POST /users/register Status: 201 CREATED
+  public void registerUser_validInput_userCreated201() throws Exception {
+    // given
+    User user = new User();
+    user.setId(1L);
+    user.setUsername("testUsername");
+    user.setPassword("testPassword");
+    user.setToken("1");
+    user.setStatus(UserStatus.ONLINE);
+
+    UserPostDTO userPostDTO = new UserPostDTO();
+    userPostDTO.setUsername("testUsername");
+    userPostDTO.setPassword("testPassword");
+
+    given(userService.createUser(Mockito.any())).willReturn(user);
+
+    // when/then -> do the request + validate the result
+    MockHttpServletRequestBuilder postRequest = post("/users/register")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(asJsonString(userPostDTO)); // Ensures both username & password are sent
+
+    // then
+    mockMvc.perform(postRequest)
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.id", is(user.getId().intValue())))
+        .andExpect(jsonPath("$.username", is(user.getUsername())))
+        .andExpect(jsonPath("$.status", is(user.getStatus().toString())));
+  }
+
+  @Test
+  // POST /users/register Status: 409 CONFLICT
+  public void registerUser_duplicateUsername_returnsConflict409() throws Exception {
+    // given
+    UserPostDTO userPostDTO = new UserPostDTO();
+    userPostDTO.setUsername("testUsername");
+    userPostDTO.setPassword("testPassword");
+
+    Mockito.doThrow(new ResponseStatusException(HttpStatus.CONFLICT, "Username already exists!"))
+        .when(userService).createUser(Mockito.any());
+
+    // when
+    MockHttpServletRequestBuilder postRequest = post("/users/register")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(asJsonString(userPostDTO));
+
+    // then
+    mockMvc.perform(postRequest)
+        .andExpect(status().isConflict()); // 409 Conflict
+  }
+
+  @Test
+  // POST /users/login Status: 200 OK
+  public void loginUser_validCredentials_returnsUser200() throws Exception {
+    // given
+    User user = new User();
+    user.setId(1L);
+    user.setUsername("testUsername");
+    user.setPassword("testPassword");
+    user.setToken("1");
+    user.setStatus(UserStatus.ONLINE);
+
+    UserPostDTO userPostDTO = new UserPostDTO();
+    userPostDTO.setUsername("testUsername");
+    userPostDTO.setPassword("testPassword");
+
+    given(userService.authenticateUser(Mockito.any())).willReturn(user);
+
+    // when
+    MockHttpServletRequestBuilder postRequest = post("/users/login")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(asJsonString(userPostDTO));
+
+    // then
+    mockMvc.perform(postRequest)
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.id", is(user.getId().intValue())))
+        .andExpect(jsonPath("$.username", is(user.getUsername())))
+        .andExpect(jsonPath("$.status", is(user.getStatus().toString())));
+  }
+
+  @Test
+  // POST /users/login Status: 401 UNAUTHORIZED
+  public void loginUser_invalidCredentials_returnsUnauthorized401() throws Exception {
+    // given
+    UserPostDTO userPostDTO = new UserPostDTO();
+    userPostDTO.setUsername("testUsername");
+    userPostDTO.setPassword("wrongPassword");
+
+    // Return null to simulate authentication failure
+    given(userService.authenticateUser(Mockito.any())).willReturn(null);
+
+    // when
+    MockHttpServletRequestBuilder postRequest = post("/users/login")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(asJsonString(userPostDTO));
+
+    // then
+    mockMvc.perform(postRequest)
+        .andExpect(status().isUnauthorized()); // 401 Unauthorized
   }
 }
