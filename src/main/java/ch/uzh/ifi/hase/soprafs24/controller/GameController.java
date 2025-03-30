@@ -11,6 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.ResponseEntity;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.server.ResponseStatusException;
 import java.util.Optional;
 
 import java.util.ArrayList;
@@ -33,7 +34,7 @@ public class GameController {
     public GameGetDTO createGame(@RequestBody GamePostDTO gamePostDTO, @RequestHeader("Authorization") String token) {
         Optional<User> user = userService.getUserByToken(token);
         if (user.isEmpty()) {
-            throw new RuntimeException("Invalid token: User not found");
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,"Invalid token: User not found");
         }
         Game gameInput = DTOMapper.INSTANCE.convertGamePostDTOtoEntity(gamePostDTO);
 
@@ -52,7 +53,19 @@ public class GameController {
             .orElse(ResponseEntity.notFound().build());
     }
     
-    // @PutMapping("/games/{id}")
-    // public ResponseEntity<GameGetDTO> updateGame(@PathVariable Long id, @RequestBody GamePutDTO gamePutDTO) {
-    // }
+    @PutMapping("/games/{id}")
+    public ResponseEntity<GameGetDTO> updateGame(@PathVariable Long id, @RequestHeader("Authorization") String token) {
+        Optional<User> optionalUser = userService.getUserByToken(token);
+        if (optionalUser.isEmpty()) { return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build(); }
+        User user = optionalUser.get();
+
+        Optional<Game> gameOptional = gameService.getGameById(id);
+        if (gameOptional.isEmpty()) { return ResponseEntity.notFound().build(); }
+        Game game = gameOptional.get();
+
+        if (game.getUsers().contains(user)) { return ResponseEntity.status(HttpStatus.CONFLICT).build(); }
+
+        Game updatedGame = gameService.joinGame(game, user);
+        return ResponseEntity.ok(DTOMapper.INSTANCE.convertEntityToGameGetDTO(updatedGame));
+    }
 }

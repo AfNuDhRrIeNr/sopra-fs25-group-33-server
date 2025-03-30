@@ -36,4 +36,9 @@ public class GameService {
     public Optional<Game> getGameById(Long id) {
         return gameRepository.findById(id);
     }
+
+    public Game joinGame(Game game, User user) {
+        game.addUser(user);
+        return gameRepository.save(game);
+    }
 }

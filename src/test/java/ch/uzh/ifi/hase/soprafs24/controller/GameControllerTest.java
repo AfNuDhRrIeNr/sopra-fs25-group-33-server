@@ -74,6 +74,21 @@ public class GameControllerTest {
     }
 
     @Test
+    public void createGame_invalidInput_runTimeException() throws Exception {
+        GamePostDTO gamePostDTO = new GamePostDTO();
+
+        given(userService.getUserByToken("Bearer test-token")).willReturn(Optional.empty());
+
+        MockHttpServletRequestBuilder postRequest = post("/games")
+            .contentType(MediaType.APPLICATION_JSON)
+            .header("Authorization", "Bearer test-token")
+            .content(asJsonString(gamePostDTO));
+
+        mockMvc.perform(postRequest)
+            .andExpect(status().isUnauthorized());
+    }
+
+    @Test
     public void getGameById_validId_gameReturned() throws Exception {
         Game game = new Game();
         game.setId(1L);
