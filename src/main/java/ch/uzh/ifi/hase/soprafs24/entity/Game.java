@@ -1,5 +1,8 @@
 package ch.uzh.ifi.hase.soprafs24.entity;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
+import ch.uzh.ifi.hase.soprafs24.entity.BoardBase;
+import ch.uzh.ifi.hase.soprafs24.entity.Moves;
+import ch.uzh.ifi.hase.soprafs24.constant.GameStatus;
 import javax.persistence.*;
 import java.io.Serializable;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
@@ -20,20 +23,20 @@ public class Game implements Serializable {
     @ElementCollection
     private List<User> users = new ArrayList<>();
 
-    private String boardBase = "DEFAULT_BOARD";
+    private BoardBase boardBase;
 
     private String host;
 
     @ElementCollection
     private List<String> userOrder = new ArrayList<>();
  
-    private String gameStatus = "WAITING";
+    private GameStatus gameStatus = GameStatus.CREATED;
 
     @Column(name = "start_time")
     private LocalDateTime startTime;
 
     @ElementCollection
-    private List<String> moves = new ArrayList<>();
+    private List<Moves> moves = new ArrayList<>();
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -42,8 +45,8 @@ public class Game implements Serializable {
     public void setUsers(List<User> users) { this.users = users; }
     public void addUser(User user) { this.users.add(user); }  
 
-    public String getBoardBase() { return boardBase; }
-    public void setBoardBase(String boardBase) { this.boardBase = boardBase; }
+    public BoardBase getBoardBase() { return boardBase; }
+    public void setBoardBase(BoardBase boardBase) { this.boardBase = boardBase; }
 
     public String getHost() { return host; }
     public void setHost(String host) { this.host = host; }
@@ -51,12 +54,12 @@ public class Game implements Serializable {
     public List<String> getUserOrder() { return userOrder; } 
     public void setUserOrder(List<String> userOrder) { this.userOrder = userOrder; }
 
-    public String getGameStatus() { return gameStatus; }
-    public void setGameStatus(String gameStatus) { this.gameStatus = gameStatus; }
+    public GameStatus getGameStatus() { return gameStatus; }
+    public void setGameStatus(GameStatus gameStatus) { this.gameStatus = gameStatus; }
 
     public LocalDateTime getStartTime() { return startTime; }
     public void setStartTime(LocalDateTime startTime) { this.startTime = startTime; }
 
-    public List<String> getMoves() { return moves; }
-    public void setMoves(List<String> moves) { this.moves = moves; }
+    public List<Moves> getMoves() { return moves; }
+    public void setMoves(List<Moves> moves) { this.moves = moves; }
 }

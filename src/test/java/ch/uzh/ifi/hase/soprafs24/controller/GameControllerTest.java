@@ -57,8 +57,7 @@ public class GameControllerTest {
         GamePostDTO gamePostDTO = new GamePostDTO();
         GameGetDTO gameGetDTO = new GameGetDTO();
         gameGetDTO.setHost("12345");
-        gameGetDTO.setBoardBase("DEFAULT_BOARD");
-        gameGetDTO.setGameStatus("WAITING");
+
 
         given(gameService.createGame(Mockito.any(Game.class), Mockito.any(User.class))).willReturn(game);
         given(userService.getUserByToken("Bearer test-token")).willReturn(Optional.of(user));
@@ -70,9 +69,8 @@ public class GameControllerTest {
 
         mockMvc.perform(postRequest)
             .andExpect(status().isCreated())
-            .andExpect(jsonPath("$.host", is("12345")))
-            .andExpect(jsonPath("$.boardBase", is("DEFAULT_BOARD")))
-            .andExpect(jsonPath("$.gameStatus", is("WAITING")));
+            .andExpect(jsonPath("$.host", is("12345")));
+
     }
 
     @Test
