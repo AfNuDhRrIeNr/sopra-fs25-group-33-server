@@ -1,18 +1,19 @@
 package ch.uzh.ifi.hase.soprafs24.rest.dto;
 
 import java.time.LocalDateTime;
+import ch.uzh.ifi.hase.soprafs24.entity.User;
 import java.util.List;
-import java.util.Queue;
 import java.util.LinkedList;
+import java.util.ArrayList;
 
 
 
 public class GameGetDTO {
     private Long id;
-    private List<String> users;
+    private List<User> users;
     private String boardBase; 
     private String host;
-    private Queue<String> userOrder = new LinkedList<>();
+    private List<String> userOrder;
     private String gameStatus;
     private LocalDateTime startTime;
     private List<String> moves;
@@ -20,8 +21,8 @@ public class GameGetDTO {
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
-    public List<String> getUsers() { return users; }
-    public void setUsers(List<String> users) { this.users = users; }
+    public List<User> getUsers() { return users; }
+    public void setUsers(List<User> users) { this.users = users; }
 
     public String getBoardBase() { return boardBase; }
     public void setBoardBase(String boardBase) { this.boardBase = boardBase; }
@@ -29,8 +30,8 @@ public class GameGetDTO {
     public String getHost() { return host; }
     public void setHost(String host) { this.host = host; }
 
-    public Queue<String> getUserOrder() { return userOrder; }
-    public void setUserOrder(Queue<String> userOrder) { this.userOrder = new LinkedList<>(userOrder); }
+    public List<String> getUserOrder() { return userOrder; }
+    public void setUserOrder(List<String> userOrder) { this.userOrder = new ArrayList<>(userOrder); }
 
     public String getGameStatus() { return gameStatus; }
     public void setGameStatus(String gameStatus) { this.gameStatus = gameStatus; }

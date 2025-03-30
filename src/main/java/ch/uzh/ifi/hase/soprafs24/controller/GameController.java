@@ -9,6 +9,7 @@ import ch.uzh.ifi.hase.soprafs24.service.GameService;
 import ch.uzh.ifi.hase.soprafs24.service.UserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.http.ResponseEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import java.util.Optional;
 
@@ -38,9 +39,20 @@ public class GameController {
 
         gameInput.setHost(user.get().getId().toString());
 
-        Game createdGame = gameService.createGame(gameInput);
+        Game createdGame = gameService.createGame(gameInput, user.get());
 
         return DTOMapper.INSTANCE.convertEntityToGameGetDTO(createdGame);
     }
+
+
+    @GetMapping("/games/{id}")
+    public ResponseEntity<GameGetDTO> getGameById(@PathVariable Long id) {
+        return gameService.getGameById(id)
+            .map(game -> ResponseEntity.ok(DTOMapper.INSTANCE.convertEntityToGameGetDTO(game)))
+            .orElse(ResponseEntity.notFound().build());
+    }
     
+    // @PutMapping("/games/{id}")
+    // public ResponseEntity<GameGetDTO> updateGame(@PathVariable Long id, @RequestBody GamePutDTO gamePutDTO) {
+    // }
 }

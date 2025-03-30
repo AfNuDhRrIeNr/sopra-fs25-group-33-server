@@ -1,6 +1,7 @@
 package ch.uzh.ifi.hase.soprafs24.service;
 
 import ch.uzh.ifi.hase.soprafs24.entity.Game;
+import ch.uzh.ifi.hase.soprafs24.entity.User;
 import ch.uzh.ifi.hase.soprafs24.repository.GameRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,10 +26,14 @@ public class GameService {
     @Autowired
     public GameService(@Qualifier("gameRepository") GameRepository gameRepository) {
     this.gameRepository = gameRepository;
-  }
+    }
 
-    public Game createGame(Game game) {
-
+    public Game createGame(Game game, User host) {
+        game.addUser(host);
         return gameRepository.save(game);
+    }
+
+    public Optional<Game> getGameById(Long id) {
+        return gameRepository.findById(id);
     }
 }

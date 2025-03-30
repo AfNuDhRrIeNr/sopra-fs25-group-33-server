@@ -70,7 +70,7 @@ public class UserControllerTest {
 
   @Test
   public void createUser_validInput_userCreated() throws Exception {
-    // given
+    
     User user = new User();
     user.setId(1L);
     user.setName("Test User");
@@ -84,12 +84,11 @@ public class UserControllerTest {
 
     given(userService.createUser(Mockito.any())).willReturn(user);
 
-    // when/then -> do the request + validate the result
+    
     MockHttpServletRequestBuilder postRequest = post("/users")
         .contentType(MediaType.APPLICATION_JSON)
         .content(asJsonString(userPostDTO));
-
-    // then
+   
     mockMvc.perform(postRequest)
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.id", is(user.getId().intValue())))

@@ -4,6 +4,7 @@ import ch.uzh.ifi.hase.soprafs24.constant.UserStatus;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
 import ch.uzh.ifi.hase.soprafs24.entity.Game;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.GamePostDTO;
+import ch.uzh.ifi.hase.soprafs24.rest.dto.GamePutDTO;
 import ch.uzh.ifi.hase.soprafs24.service.GameService;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.UserPostDTO;
 import ch.uzh.ifi.hase.soprafs24.service.UserService;
@@ -19,10 +20,11 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.web.server.ResponseStatusException;
-
+import ch.uzh.ifi.hase.soprafs24.rest.dto.GameGetDTO;
 import java.util.Collections;
 import java.util.List;
-
+import ch.uzh.ifi.hase.soprafs24.rest.mapper.DTOMapper;
+import java.util.Optional;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.BDDMockito.given;
@@ -31,47 +33,78 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+
 @WebMvcTest(GameController.class)
 public class GameControllerTest {
+
     @Autowired
     private MockMvc mockMvc;
-  
+
     @MockBean
     private GameService gameService;
 
+    @MockBean
+    private UserService userService;
+
     @Test
     public void createGame_validInput_gameCreated() throws Exception {
-    
-        Game game = new Game(); 
-        game.setId(1L); 
+        Game game = new Game();
+        game.setId(1L);
+        game.setHost("12345");
+        User user = new User();
+        user.setId(12345L);
 
         GamePostDTO gamePostDTO = new GamePostDTO();
         GameGetDTO gameGetDTO = new GameGetDTO();
-        gameGetDTO.setHost("12345"); 
-        gameGetDTO.setBoardBase("DEFAULT_BOARD"); 
-        gameGetDTO.setGameStatus("WAITING"); 
+        gameGetDTO.setHost("12345");
+        gameGetDTO.setBoardBase("DEFAULT_BOARD");
+        gameGetDTO.setGameStatus("WAITING");
 
-        given(gameService.createGame(Mockito.any())).willReturn(game);
-        given(DTOMapper.INSTANCE.convertEntityToGameGetDTO(Mockito.any())).willReturn(gameGetDTO);
+        given(gameService.createGame(Mockito.any(Game.class), Mockito.any(User.class))).willReturn(game);
+        given(userService.getUserByToken("Bearer test-token")).willReturn(Optional.of(user));
 
         MockHttpServletRequestBuilder postRequest = post("/games")
             .contentType(MediaType.APPLICATION_JSON)
+            .header("Authorization", "Bearer test-token")
             .content(asJsonString(gamePostDTO));
 
         mockMvc.perform(postRequest)
             .andExpect(status().isCreated())
-            .andExpect(jsonPath("$.host", is(gameGetDTO.getHost())))
-            .andExpect(jsonPath("$.boardBase", is(gameGetDTO.getBoardBase())))
-            .andExpect(jsonPath("$.gameStatus", is(gameGetDTO.getGameStatus())));
+            .andExpect(jsonPath("$.host", is("12345")))
+            .andExpect(jsonPath("$.boardBase", is("DEFAULT_BOARD")))
+            .andExpect(jsonPath("$.gameStatus", is("WAITING")));
     }
-    
+
+    @Test
+    public void getGameById_validId_gameReturned() throws Exception {
+        Game game = new Game();
+        game.setId(1L);
+        game.setHost("12345");
+
+        GameGetDTO gameGetDTO = new GameGetDTO();
+        gameGetDTO.setHost("12345");
+
+        given(gameService.getGameById(1L)).willReturn(Optional.of(game));
+
+        mockMvc.perform(get("/games/1"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.host", is("12345")));
+    }
+
+    @Test
+    public void getGameById_invalidId_notFound() throws Exception {
+        given(gameService.getGameById(1L)).willReturn(Optional.empty());
+
+        mockMvc.perform(get("/games/1"))
+            .andExpect(status().isNotFound());
+    }
 
     private String asJsonString(final Object object) {
         try {
-          return new ObjectMapper().writeValueAsString(object);
+            return new ObjectMapper().writeValueAsString(object);
         } catch (JsonProcessingException e) {
-          throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-              String.format("The request body could not be created.%s", e.toString()));
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                String.format("The request body could not be created.%s", e.toString()));
         }
     }
 }
