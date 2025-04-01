@@ -44,8 +44,6 @@ public class MoveValidatorService {
         // Get current board state
         char[][] currentBoard = game.getBoard();
         
-        log.debug("Current board: {}", printBoard(currentBoard));
-        log.debug("New board: {}", printBoard(newBoard));
         
         try {
             // Validate move and get formed words
@@ -56,7 +54,6 @@ public class MoveValidatorService {
                 throw new IllegalArgumentException("No valid words formed");
             }
             
-            log.debug("Move validated for Game: {}, Words formed: {}", gameId, formedWords);
             return formedWords;
         } 
         catch (IllegalArgumentException e) {
@@ -216,15 +213,4 @@ public class MoveValidatorService {
         return word.toString();
     }
 
-    // Helper method for debugging
-    private String printBoard(char[][] board) {
-        StringBuilder sb = new StringBuilder("\n");
-        for (int i = 0; i < board.length; i++) {
-            for (int j = 0; j < board[0].length; j++) {
-                sb.append(board[i][j] == '\0' ? '.' : board[i][j]).append(' ');
-            }
-            sb.append('\n');
-        }
-        return sb.toString();
-    }
 }
