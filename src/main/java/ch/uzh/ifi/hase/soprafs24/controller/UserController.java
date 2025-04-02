@@ -56,6 +56,7 @@ public class UserController {
     return DTOMapper.INSTANCE.convertEntityToUserGetDTO(createdUser);
   }
 
+
 // POST /login - Authenticate a user and return their data if credentials are valid
   @PostMapping("/users/login")
   @ResponseStatus(HttpStatus.OK)
