@@ -127,7 +127,7 @@ public class WebSocketControllerTest {
         CompletableFuture<MessageGameStateMessageDTO> completableFuture2 = new CompletableFuture<>();
 
         // Subscribe twice
-        Subscription subscription1 = session.subscribe(SUBSCRIBE_GAME_STATE_DESTINATION + gameId, new MessageGameStateDTOHandler(completableFuture));
+        Subscription subscription1 = session.subscribe(SUBSCRIBE_GAME_STATE_DESTINATION + gameId, new MessageGameStateDTOHandler(completableFuture1));
         Subscription subscription2 = session.subscribe(SUBSCRIBE_GAME_STATE_DESTINATION + gameId, new MessageGameStateDTOHandler(completableFuture2));
 
         assertNotNull(subscription1, "First subscription should be successful");
