@@ -1,4 +1,5 @@
 package ch.uzh.ifi.hase.soprafs24.entity;
+
 import ch.uzh.ifi.hase.soprafs24.entity.User;
 import ch.uzh.ifi.hase.soprafs24.entity.BoardBase;
 import ch.uzh.ifi.hase.soprafs24.entity.Moves;
@@ -6,6 +7,7 @@ import ch.uzh.ifi.hase.soprafs24.constant.GameStatus;
 import javax.persistence.*;
 import java.io.Serializable;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
+
 import java.util.List;
 import java.util.ArrayList;
 import java.time.LocalDateTime;
@@ -32,11 +34,12 @@ public class Game implements Serializable {
 
     @ElementCollection
     private List<String> userOrder = new ArrayList<>();
- 
+
     private GameStatus gameStatus = GameStatus.CREATED;
 
     @Column(name = "start_time")
     private LocalDateTime startTime;
+
 
     @ElementCollection
     private List<Moves> moves = new ArrayList<>();
@@ -66,3 +69,4 @@ public class Game implements Serializable {
     public List<Moves> getMoves() { return moves; }
     public void setMoves(List<Moves> moves) { this.moves = moves; }
 }
+
