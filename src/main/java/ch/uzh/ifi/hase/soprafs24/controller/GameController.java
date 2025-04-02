@@ -31,16 +31,14 @@ public class GameController {
     @PostMapping("/games")
     @ResponseStatus(HttpStatus.CREATED)
     @ResponseBody
-    public GameGetDTO createGame(@RequestBody GamePostDTO gamePostDTO, @RequestHeader("Authorization") String token) {
+    public GameGetDTO createGame( @RequestHeader("Authorization") String token) {
         Optional<User> user = userService.getUserByToken(token);
         if (user.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,"Invalid token: User not found");
         }
-        Game gameInput = DTOMapper.INSTANCE.convertGamePostDTOtoEntity(gamePostDTO);
 
-        gameInput.setHost(user.get().getId().toString());
 
-        Game createdGame = gameService.createGame(gameInput, user.get());
+        Game createdGame = gameService.createGame(user.get());
 
         return DTOMapper.INSTANCE.convertEntityToGameGetDTO(createdGame);
     }

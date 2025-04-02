@@ -50,16 +50,16 @@ public class GameControllerTest {
     public void createGame_validInput_gameCreated() throws Exception {
         Game game = new Game();
         game.setId(1L);
-        game.setHost("12345");
         User user = new User();
         user.setId(12345L);
+        game.setHost(user);
 
         GamePostDTO gamePostDTO = new GamePostDTO();
         GameGetDTO gameGetDTO = new GameGetDTO();
         gameGetDTO.setHost("12345");
 
 
-        given(gameService.createGame(Mockito.any(Game.class), Mockito.any(User.class))).willReturn(game);
+        given(gameService.createGame(Mockito.any(User.class))).willReturn(game);
         given(userService.getUserByToken("Bearer test-token")).willReturn(Optional.of(user));
 
         MockHttpServletRequestBuilder postRequest = post("/games")
@@ -92,7 +92,7 @@ public class GameControllerTest {
     public void getGameById_validId_gameReturned() throws Exception {
         Game game = new Game();
         game.setId(1L);
-        game.setHost("12345");
+        game.setHost(new User());
 
         GameGetDTO gameGetDTO = new GameGetDTO();
         gameGetDTO.setHost("12345");

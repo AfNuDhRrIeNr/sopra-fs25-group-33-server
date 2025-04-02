@@ -40,7 +40,7 @@ public interface DTOMapper {
 
 
   @Mapping(source = "users", target = "users")
-  @Mapping(source = "boardBase", target = "boardBase")
+  @Mapping(source = "board", target = "board")
   @Mapping(source = "host", target = "host")
   @Mapping(source = "gameStatus", target = "gameStatus")
   @Mapping(target = "userOrder", expression = "java(new LinkedList<>(game.getUserOrder()))")

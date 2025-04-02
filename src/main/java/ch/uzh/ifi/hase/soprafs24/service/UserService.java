@@ -79,7 +79,7 @@ public class UserService {
 
   public Optional<User> getUserByToken(String token) {
     return userRepository.findByToken(token);
-  
+    }
   public User authenticateUser(User userInput) {
     // Find user by username
     User user = userRepository.findByUsername(userInput.getUsername());

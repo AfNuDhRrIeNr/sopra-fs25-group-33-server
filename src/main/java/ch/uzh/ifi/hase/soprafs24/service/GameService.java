@@ -29,8 +29,10 @@ public class GameService {
     this.gameRepository = gameRepository;
     }
 
-    public Game createGame(Game game, User host) {
-        game.addUser(host);
+    public Game createGame(User host) {
+        Game game = new Game();
+        game.setHost(host);
+        game.getUsers().add(host);
         return gameRepository.save(game);
     }
 
