@@ -84,7 +84,6 @@ public class UserControllerTest {
   }
 
   @Test
-  //POST /users/register Status: 201 CREATED
   public void registerUser_validInput_userCreated201() throws Exception {
     // given
     User user = new User();
