@@ -38,12 +38,13 @@ public interface DTOMapper {
   @Mapping(source = "host", target = "host")
   Game convertGamePostDTOtoEntity(GamePostDTO gamePostDTO);
 
-
-  @Mapping(source = "users", target = "users")
-  @Mapping(source = "board", target = "board")
-  @Mapping(source = "host", target = "host")
+  @Mapping(source = "id", target = "id")
   @Mapping(source = "gameStatus", target = "gameStatus")
-  @Mapping(target = "userOrder", expression = "java(new LinkedList<>(game.getUserOrder()))")
   @Mapping(source = "startTime", target = "startTime")
+  @Mapping(source = "board", target = "board")
+  @Mapping(source = "boardState", target = "boardState")
+  @Mapping(source = "isHostTurn", target = "isHostTurn")
+  @Mapping(target = "users", expression = "java(game.getUsers())")
+  @Mapping(target = "host", source = "host")
   GameGetDTO convertEntityToGameGetDTO(Game game);
 }

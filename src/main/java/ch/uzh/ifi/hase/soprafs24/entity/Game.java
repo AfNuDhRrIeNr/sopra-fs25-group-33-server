@@ -111,12 +111,20 @@ public class Game implements Serializable {
     public LocalDateTime getStartTime() { return startTime; }
     public void setStartTime(LocalDateTime startTime) { this.startTime = startTime; }
 
-    public boolean isHostTurn() {
+    public boolean getIsHostTurn() {
         return isHostTurn;
     }
 
-    public void setHostTurn(boolean hostTurn) {
+    public void setIsHostTurn(boolean hostTurn) {
         isHostTurn = hostTurn;
+    }
+
+    public String getBoardState() {
+        return boardState;
+    }
+    
+    public void setBoardState(String boardState) {
+        this.boardState = boardState;
     }
 
 }

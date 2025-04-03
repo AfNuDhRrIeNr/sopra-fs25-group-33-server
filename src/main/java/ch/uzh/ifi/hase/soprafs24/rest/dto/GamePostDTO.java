@@ -1,8 +1,9 @@
 package ch.uzh.ifi.hase.soprafs24.rest.dto;
+import ch.uzh.ifi.hase.soprafs24.entity.User;
 public class GamePostDTO {
-    private String host;
+    private User host;
 
-    public String getHost() { return host; }
+    public User getHost() { return host; }
 
-    public void setHost(String host) { this.host = host; }
+    public void setHost(User host) { this.host = host; }
 }

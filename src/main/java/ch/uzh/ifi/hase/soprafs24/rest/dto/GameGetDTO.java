@@ -12,10 +12,12 @@ import java.util.List;
 public class GameGetDTO {
     private Long id;
     private List<User> users;
-    private String host;
-    private List<String> userOrder;
+    private User host;
+    private boolean isHostTurn;
     private GameStatus gameStatus;
     private LocalDateTime startTime;
+
+    private String boardState;
 
     private char[][] board;
 
@@ -26,11 +28,9 @@ public class GameGetDTO {
     public void setUsers(List<User> users) { this.users = users; }
 
 
-    public String getHost() { return host; }
-    public void setHost(String host) { this.host = host; }
+    public User getHost() { return host; }
+    public void setHost(User host) { this.host = host; }
 
-    public List<String> getUserOrder() { return userOrder; }
-    public void setUserOrder(List<String> userOrder) { this.userOrder = new ArrayList<>(userOrder); }
 
     public GameStatus getGameStatus() { return gameStatus; }
     public void setGameStatus(GameStatus gameStatus) { this.gameStatus = gameStatus; }
@@ -44,6 +44,22 @@ public class GameGetDTO {
 
     public void setBoard(char[][] board) {
         this.board = board;
+    }
+
+    public String getBoardState() {
+        return boardState;
+    }
+    
+    public void setBoardState(String boardState) {
+        this.boardState = boardState;
+    }
+    
+    public boolean getIsHostTurn() {
+        return isHostTurn;
+    }
+    
+    public void setIsHostTurn(boolean hostTurn) {
+        isHostTurn = hostTurn;
     }
 
 }
