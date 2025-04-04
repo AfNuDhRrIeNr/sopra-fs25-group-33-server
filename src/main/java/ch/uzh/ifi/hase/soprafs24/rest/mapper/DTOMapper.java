@@ -1,14 +1,15 @@
 package ch.uzh.ifi.hase.soprafs24.rest.mapper;
 
-import ch.uzh.ifi.hase.soprafs24.entity.User;
 import ch.uzh.ifi.hase.soprafs24.entity.Game;
+import ch.uzh.ifi.hase.soprafs24.entity.User;
+import ch.uzh.ifi.hase.soprafs24.rest.dto.GameGetDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.UserGetDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.UserPostDTO;
-import ch.uzh.ifi.hase.soprafs24.rest.dto.GamePostDTO;
-import ch.uzh.ifi.hase.soprafs24.rest.dto.GameGetDTO;
-import java.util.LinkedList;
-import org.mapstruct.*;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 import org.mapstruct.factory.Mappers;
+
+import java.util.LinkedList;
 
 /**
  * DTOMapper
@@ -35,15 +36,12 @@ public interface DTOMapper {
   @Mapping(source = "status", target = "status")
   UserGetDTO convertEntityToUserGetDTO(User user);
 
-  @Mapping(source = "host", target = "host")
-  Game convertGamePostDTOtoEntity(GamePostDTO gamePostDTO);
-
 
   @Mapping(source = "users", target = "users")
   @Mapping(source = "board", target = "board")
   @Mapping(source = "host", target = "host")
   @Mapping(source = "gameStatus", target = "gameStatus")
-  @Mapping(target = "userOrder", expression = "java(new LinkedList<>(game.getUserOrder()))")
+  @Mapping(source = "hostTurn", target = "hostTurn") // Needs to be hostTurn instead of IsHostTurn (weird JPA internal implementation)
   @Mapping(source = "startTime", target = "startTime")
   GameGetDTO convertEntityToGameGetDTO(Game game);
 }

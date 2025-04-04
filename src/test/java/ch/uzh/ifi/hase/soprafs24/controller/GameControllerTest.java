@@ -1,12 +1,10 @@
 package ch.uzh.ifi.hase.soprafs24.controller;
 
-import ch.uzh.ifi.hase.soprafs24.constant.UserStatus;
-import ch.uzh.ifi.hase.soprafs24.entity.User;
 import ch.uzh.ifi.hase.soprafs24.entity.Game;
+import ch.uzh.ifi.hase.soprafs24.entity.User;
+import ch.uzh.ifi.hase.soprafs24.rest.dto.GameGetDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.GamePostDTO;
-import ch.uzh.ifi.hase.soprafs24.rest.dto.GamePutDTO;
 import ch.uzh.ifi.hase.soprafs24.service.GameService;
-import ch.uzh.ifi.hase.soprafs24.rest.dto.UserPostDTO;
 import ch.uzh.ifi.hase.soprafs24.service.UserService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -20,12 +18,9 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.web.server.ResponseStatusException;
-import ch.uzh.ifi.hase.soprafs24.rest.dto.GameGetDTO;
-import java.util.Collections;
-import java.util.List;
-import ch.uzh.ifi.hase.soprafs24.rest.mapper.DTOMapper;
+
 import java.util.Optional;
-import static org.hamcrest.Matchers.hasSize;
+
 import static org.hamcrest.Matchers.is;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -56,7 +51,7 @@ public class GameControllerTest {
 
         GamePostDTO gamePostDTO = new GamePostDTO();
         GameGetDTO gameGetDTO = new GameGetDTO();
-        gameGetDTO.setHost("12345");
+        gameGetDTO.setHost(user);
 
 
         given(gameService.createGame(Mockito.any(User.class))).willReturn(game);
@@ -69,7 +64,8 @@ public class GameControllerTest {
 
         mockMvc.perform(postRequest)
             .andExpect(status().isCreated())
-            .andExpect(jsonPath("$.host", is("12345")));
+            .andExpect(jsonPath("$.id", is(game.getId().intValue())))
+            .andExpect(jsonPath("$.host.id", is(user.getId().intValue())));
 
     }
 
@@ -90,18 +86,21 @@ public class GameControllerTest {
 
     @Test
     public void getGameById_validId_gameReturned() throws Exception {
+
+        User user = new User();
+        user.setId(12345L);
         Game game = new Game();
         game.setId(1L);
-        game.setHost(new User());
+        game.setHost(user);
 
         GameGetDTO gameGetDTO = new GameGetDTO();
-        gameGetDTO.setHost("12345");
+        gameGetDTO.setHost(user);
 
         given(gameService.getGameById(1L)).willReturn(Optional.of(game));
 
         mockMvc.perform(get("/games/1"))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.host", is("12345")));
+            .andExpect(jsonPath("$.host.id", is(user.getId().intValue())));
     }
 
     @Test

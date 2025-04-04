@@ -4,7 +4,6 @@ import ch.uzh.ifi.hase.soprafs24.constant.GameStatus;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
 
@@ -12,8 +11,8 @@ import java.util.List;
 public class GameGetDTO {
     private Long id;
     private List<User> users;
-    private String host;
-    private List<String> userOrder;
+    private User host;
+    private boolean isHostTurn;
     private GameStatus gameStatus;
     private LocalDateTime startTime;
 
@@ -26,11 +25,8 @@ public class GameGetDTO {
     public void setUsers(List<User> users) { this.users = users; }
 
 
-    public String getHost() { return host; }
-    public void setHost(String host) { this.host = host; }
-
-    public List<String> getUserOrder() { return userOrder; }
-    public void setUserOrder(List<String> userOrder) { this.userOrder = new ArrayList<>(userOrder); }
+    public User getHost() { return host; }
+    public void setHost(User host) { this.host = host; }
 
     public GameStatus getGameStatus() { return gameStatus; }
     public void setGameStatus(GameStatus gameStatus) { this.gameStatus = gameStatus; }
@@ -44,6 +40,14 @@ public class GameGetDTO {
 
     public void setBoard(char[][] board) {
         this.board = board;
+    }
+
+    public boolean isHostTurn() {
+        return isHostTurn;
+    }
+
+    public void setHostTurn(boolean hostTurn) {
+        this.isHostTurn = hostTurn;
     }
 
 }

@@ -122,7 +122,7 @@ public class Game implements Serializable {
     }
 
     public void setHostTurn(boolean hostTurn) {
-        isHostTurn = hostTurn;
+        this.isHostTurn = hostTurn;
     }
 
 }
