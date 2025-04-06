@@ -28,8 +28,8 @@ class MoveValidatorServiceTest {
     private MoveValidatorService moveValidatorService;
 
     private Game testGame;
-    private char[][] boardWithH;
-    private char[][] boardWithHAT;
+    private String[][] boardWithH;
+    private String[][] boardWithHAT;
 
     @BeforeEach
     void setUp() {
@@ -40,14 +40,23 @@ class MoveValidatorServiceTest {
         testGame.setId(1L);
         
         // Create test boards to help with redundancy
+        boardWithH = new String[15][15];
+        for (int i = 0; i < 15; i++) {
+            for (int j = 0; j < 15; j++) {
+                boardWithH[i][j] = "";
+            }
+        }
+        boardWithH[7][7] = "H";
         
-        boardWithH = new char[15][15];
-        boardWithH[7][7] = 'H';
-        
-        boardWithHAT = new char[15][15];
-        boardWithHAT[7][7] = 'H';
-        boardWithHAT[7][8] = 'A';
-        boardWithHAT[7][9] = 'T';
+        boardWithHAT = new String[15][15];
+        for (int i = 0; i < 15; i++) {
+            for (int j = 0; j < 15; j++) {
+                boardWithHAT[i][j] = "";
+            }
+        }
+        boardWithHAT[7][7] = "H";
+        boardWithHAT[7][8] = "A";
+        boardWithHAT[7][9] = "T";
         
         // Mocked RestTemplate
         ReflectionTestUtils.setField(moveValidatorService, "restTemplate", restTemplate);
@@ -101,13 +110,23 @@ class MoveValidatorServiceTest {
     @Test
     void findWords_horizontalWord_returnsCorrectWords() {
         // Given
-        char[][] oldBoard = new char[15][15];
-        oldBoard[7][7] = 'H';
+        String[][] oldBoard = new String[15][15];
+        for (int i = 0; i < 15; i++) {
+            for (int j = 0; j < 15; j++) {
+                oldBoard[i][j] = "";
+            }
+        }
+        oldBoard[7][7] = "H";
         
-        char[][] newBoard = new char[15][15];
-        newBoard[7][7] = 'H';
-        newBoard[7][8] = 'A';
-        newBoard[7][9] = 'T';
+        String[][] newBoard = new String[15][15];
+        for (int i = 0; i < 15; i++) {
+            for (int j = 0; j < 15; j++) {
+                newBoard[i][j] = "";
+            }
+        }
+        newBoard[7][7] = "H";
+        newBoard[7][8] = "A";
+        newBoard[7][9] = "T";
         
         // When
         List<String> words = ReflectionTestUtils.invokeMethod(moveValidatorService, "findWords", oldBoard, newBoard);
@@ -123,26 +142,49 @@ class MoveValidatorServiceTest {
     @Test
     void validatePlacement_firstMoveNotAtCenter_throwsException() {
         // Given
-        char[][] emptyBoard = new char[15][15];
+        String[][] emptyBoard = new String[15][15];
+        for (int i = 0; i < 15; i++) {
+            for (int j = 0; j < 15; j++) {
+                emptyBoard[i][j] = "";
+            }
+        }
         List<int[]> positionsNotAtCenter = Collections.singletonList(new int[]{0, 0});
+        
+        String[][] newBoard = new String[15][15];
+        for (int i = 0; i < 15; i++) {
+            for (int j = 0; j < 15; j++) {
+                newBoard[i][j] = "";
+            }
+        }
+        newBoard[0][0] = "X";
         
         // When/Then
         assertThrows(IllegalArgumentException.class, () ->
             ReflectionTestUtils.invokeMethod(moveValidatorService, "validatePlacement", 
-                emptyBoard, positionsNotAtCenter, new char[15][15]));
+                emptyBoard, positionsNotAtCenter, newBoard));
     }
     
     @Test
     void validatePlacement_emptyBoardMoveNotCoveringCenter_throwsException() {
         // Given
-        char[][] emptyBoard = new char[15][15];
+        String[][] emptyBoard = new String[15][15];
+        for (int i = 0; i < 15; i++) {
+            for (int j = 0; j < 15; j++) {
+                emptyBoard[i][j] = "";
+            }
+        }
         
-        char[][] newBoard = new char[15][15];
-        newBoard[5][5] = 'H';
-        newBoard[5][6] = 'E';
-        newBoard[5][7] = 'L';
-        newBoard[5][8] = 'L';
-        newBoard[5][9] = 'O';
+        String[][] newBoard = new String[15][15];
+        for (int i = 0; i < 15; i++) {
+            for (int j = 0; j < 15; j++) {
+                newBoard[i][j] = "";
+            }
+        }
+        newBoard[5][5] = "H";
+        newBoard[5][6] = "E";
+        newBoard[5][7] = "L";
+        newBoard[5][8] = "L";
+        newBoard[5][9] = "O";
         
         List<int[]> positions = Arrays.asList(
             new int[]{5, 5},
@@ -161,14 +203,24 @@ class MoveValidatorServiceTest {
     @Test
     void validatePlacement_emptyBoardWithHorizontalWordThroughCenter_noException() {
         // Given
-        char[][] emptyBoard = new char[15][15];
+        String[][] emptyBoard = new String[15][15];
+        for (int i = 0; i < 15; i++) {
+            for (int j = 0; j < 15; j++) {
+                emptyBoard[i][j] = "";
+            }
+        }
         
-        char[][] newBoard = new char[15][15];
-        newBoard[7][5] = 'H';
-        newBoard[7][6] = 'E';
-        newBoard[7][7] = 'L';
-        newBoard[7][8] = 'L';
-        newBoard[7][9] = 'O';
+        String[][] newBoard = new String[15][15];
+        for (int i = 0; i < 15; i++) {
+            for (int j = 0; j < 15; j++) {
+                newBoard[i][j] = "";
+            }
+        }
+        newBoard[7][5] = "H";
+        newBoard[7][6] = "E";
+        newBoard[7][7] = "L";
+        newBoard[7][8] = "L";
+        newBoard[7][9] = "O";
         
         List<int[]> positions = Arrays.asList(
             new int[]{7, 5},
@@ -224,12 +276,17 @@ class MoveValidatorServiceTest {
     @Test
     void findWordAt_horizontalWord_returnsFullWord() {
         // Given
-        char[][] board = new char[15][15];
-        board[7][7] = 'H';
-        board[7][8] = 'E';
-        board[7][9] = 'L';
-        board[7][10] = 'L';
-        board[7][11] = 'O';
+        String[][] board = new String[15][15];
+        for (int i = 0; i < 15; i++) {
+            for (int j = 0; j < 15; j++) {
+                board[i][j] = "";
+            }
+        }
+        board[7][7] = "H";
+        board[7][8] = "E";
+        board[7][9] = "L";
+        board[7][10] = "L";
+        board[7][11] = "O";
         
         // When
         String word = ReflectionTestUtils.invokeMethod(moveValidatorService, "findWordAt", 
@@ -242,12 +299,17 @@ class MoveValidatorServiceTest {
     @Test
     void findWordAt_verticalWord_returnsFullWord() {
         // Given
-        char[][] board = new char[15][15];
-        board[5][7] = 'W';
-        board[6][7] = 'O';
-        board[7][7] = 'R';
-        board[8][7] = 'L';
-        board[9][7] = 'D';
+        String[][] board = new String[15][15];
+        for (int i = 0; i < 15; i++) {
+            for (int j = 0; j < 15; j++) {
+                board[i][j] = "";
+            }
+        }
+        board[5][7] = "W";
+        board[6][7] = "O";
+        board[7][7] = "R";
+        board[8][7] = "L";
+        board[9][7] = "D";
         
         // When
         String word = ReflectionTestUtils.invokeMethod(moveValidatorService, "findWordAt", 

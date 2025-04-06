@@ -39,12 +39,17 @@ class MoveValidatorServiceIntegrationTest {
     @Test
     void validateMoveAndExtractWords_firstMove_success() {
         // First valid move with "HELLO" at center
-        char[][] firstMove = new char[15][15];
-        firstMove[7][7] = 'H';
-        firstMove[7][8] = 'E';
-        firstMove[7][9] = 'L';
-        firstMove[7][10] = 'L';
-        firstMove[7][11] = 'O';
+        String[][] firstMove = new String[15][15];
+        for (int i = 0; i < 15; i++) {
+            for (int j = 0; j < 15; j++) {
+                firstMove[i][j] = "";
+            }
+        }
+        firstMove[7][7] = "H";
+        firstMove[7][8] = "E";
+        firstMove[7][9] = "L";
+        firstMove[7][10] = "L";
+        firstMove[7][11] = "O";
         
         // Test
         List<String> words = moveValidatorService.validateMoveAndExtractWords(testGame.getId(), firstMove);
@@ -57,8 +62,13 @@ class MoveValidatorServiceIntegrationTest {
     @Test
     void validateMoveAndExtractWords_invalidFirstMove_throwsException() {
         // First move not crossing center
-        char[][] invalidMove = new char[15][15];
-        invalidMove[0][0] = 'X';
+        String[][] invalidMove = new String[15][15];
+        for (int i = 0; i < 15; i++) {
+            for (int j = 0; j < 15; j++) {
+                invalidMove[i][j] = "";
+            }
+        }
+        invalidMove[0][0] = "X";
         
         // Test and assert
         assertThrows(ResponseStatusException.class, () -> 
@@ -69,25 +79,35 @@ class MoveValidatorServiceIntegrationTest {
     @Test
     void validateMoveAndExtractWords_secondMove_success() {
         // Set up first move
-        char[][] firstMove = new char[15][15];
-        firstMove[7][7] = 'H';
-        firstMove[7][8] = 'E';
-        firstMove[7][9] = 'L';
-        firstMove[7][10] = 'L';
-        firstMove[7][11] = 'O';
+        String[][] firstMove = new String[15][15];
+        for (int i = 0; i < 15; i++) {
+            for (int j = 0; j < 15; j++) {
+                firstMove[i][j] = "";
+            }
+        }
+        firstMove[7][7] = "H";
+        firstMove[7][8] = "E";
+        firstMove[7][9] = "L";
+        firstMove[7][10] = "L";
+        firstMove[7][11] = "O";
         testGame.setBoard(firstMove);
         gameRepository.saveAndFlush(testGame);
         
         // Second move forming perpendicular word
-        char[][] secondMove = new char[15][15];
+        String[][] secondMove = new String[15][15];
+        for (int i = 0; i < 15; i++) {
+            for (int j = 0; j < 15; j++) {
+                secondMove[i][j] = "";
+            }
+        }
         // Copy the existing word
-        secondMove[7][7] = 'H';
-        secondMove[7][8] = 'E';
-        secondMove[7][9] = 'L';
-        secondMove[7][10] = 'L';
-        secondMove[7][11] = 'O';
+        secondMove[7][7] = "H";
+        secondMove[7][8] = "E";
+        secondMove[7][9] = "L";
+        secondMove[7][10] = "L";
+        secondMove[7][11] = "O";
         // Add 'P' to form "LP" with the 'L'
-        secondMove[8][9] = 'P'; 
+        secondMove[8][9] = "P"; 
         
         // Test
         List<String> words = moveValidatorService.validateMoveAndExtractWords(testGame.getId(), secondMove);
@@ -101,20 +121,25 @@ class MoveValidatorServiceIntegrationTest {
     @Test
     void validateMoveAndExtractWords_newTileMustConnectToExistingTiles_throwsException() {
         // Set up the board with existing tiles
-        char[][] initialBoard = new char[15][15];
-        initialBoard[7][7] = 'H';
-        initialBoard[8][7] = 'A';
-        initialBoard[9][7] = 'T';
+        String[][] initialBoard = new String[15][15];
+        for (int i = 0; i < 15; i++) {
+            for (int j = 0; j < 15; j++) {
+                initialBoard[i][j] = "";
+            }
+        }
+        initialBoard[7][7] = "H";
+        initialBoard[8][7] = "A";
+        initialBoard[9][7] = "T";
         testGame.setBoard(initialBoard);
         gameRepository.saveAndFlush(testGame);
 
         // Attempt to place new tiles that don't connect to existing tiles
-        char[][] newBoard = new char[15][15];
+        String[][] newBoard = new String[15][15];
         for (int i = 0; i < initialBoard.length; i++) {
             System.arraycopy(initialBoard[i], 0, newBoard[i], 0, initialBoard[i].length);
         }
-        newBoard[5][5] = 'P';
-        newBoard[5][6] = 'T';
+        newBoard[5][5] = "P";
+        newBoard[5][6] = "T";
 
         // Test and assert
         assertThrows(ResponseStatusException.class, () ->
@@ -125,20 +150,25 @@ class MoveValidatorServiceIntegrationTest {
     @Test
     void validateMoveAndExtractWords_NewTilesMustConnectToEachOther_throwsException() {
         // Set up the board with existing tiles
-        char[][] initialBoard = new char[15][15];
-        initialBoard[7][7] = 'H';
-        initialBoard[8][7] = 'A';
-        initialBoard[9][7] = 'T';
+        String[][] initialBoard = new String[15][15];
+        for (int i = 0; i < 15; i++) {
+            for (int j = 0; j < 15; j++) {
+                initialBoard[i][j] = "";
+            }
+        }
+        initialBoard[7][7] = "H";
+        initialBoard[8][7] = "A";
+        initialBoard[9][7] = "T";
         testGame.setBoard(initialBoard);
         gameRepository.saveAndFlush(testGame);
 
         // Attempt to place new tiles that don't connect to each other
-        char[][] newBoard = new char[15][15];
+        String[][] newBoard = new String[15][15];
         for (int i = 0; i < initialBoard.length; i++) {
             System.arraycopy(initialBoard[i], 0, newBoard[i], 0, initialBoard[i].length);
         }
-        newBoard[7][9] = 'P';
-        newBoard[9][9] = 'T';
+        newBoard[7][9] = "P";
+        newBoard[9][9] = "T";
 
         // Test and assert
         assertThrows(ResponseStatusException.class, () ->
@@ -149,20 +179,25 @@ class MoveValidatorServiceIntegrationTest {
     @Test
     void validateMoveAndExtractWords_tilesMustBePlacedInStraightLine_throwsException() {
         // Set up the board with existing tiles
-        char[][] initialBoard = new char[15][15];
-        initialBoard[7][7] = 'H';
-        initialBoard[8][7] = 'A';
-        initialBoard[9][7] = 'T';
+        String[][] initialBoard = new String[15][15];
+        for (int i = 0; i < 15; i++) {
+            for (int j = 0; j < 15; j++) {
+                initialBoard[i][j] = "";
+            }
+        }
+        initialBoard[7][7] = "H";
+        initialBoard[8][7] = "A";
+        initialBoard[9][7] = "T";
         testGame.setBoard(initialBoard);
         gameRepository.saveAndFlush(testGame);
 
         // Attempt to place new tiles that are not in a straight line
-        char[][] newBoard = new char[15][15];
+        String[][] newBoard = new String[15][15];
         for (int i = 0; i < initialBoard.length; i++) {
             System.arraycopy(initialBoard[i], 0, newBoard[i], 0, initialBoard[i].length);
         }
-        newBoard[7][9] = 'P';
-        newBoard[8][8] = 'T';
+        newBoard[7][9] = "P";
+        newBoard[8][8] = "T";
 
         // Test and assert
         assertThrows(ResponseStatusException.class, () ->
@@ -177,10 +212,15 @@ class MoveValidatorServiceIntegrationTest {
         gameRepository.saveAndFlush(testGame);
 
         // Attempt to place the first word without covering the center square
-        char[][] newBoard = new char[15][15];
-        newBoard[5][5] = 'A';
-        newBoard[5][6] = 'B';
-        newBoard[5][7] = 'C';
+        String[][] newBoard = new String[15][15];
+        for (int i = 0; i < 15; i++) {
+            for (int j = 0; j < 15; j++) {
+                newBoard[i][j] = "";
+            }
+        }
+        newBoard[5][5] = "A";
+        newBoard[5][6] = "B";
+        newBoard[5][7] = "C";
 
         // Test and assert
         assertThrows(ResponseStatusException.class, () ->
@@ -191,30 +231,35 @@ class MoveValidatorServiceIntegrationTest {
     @Test
     void validateMoveAndExtractWords_validMoveWithMultipleWords_success() {
         // Set up the board with existing tiles
-        char[][] initialBoard = new char[15][15];
-        initialBoard[7][7] = 'C';
-        initialBoard[8][7] = 'A';
-        initialBoard[9][7] = 'T';
-        initialBoard[8][6] = 'B';
-        initialBoard[8][8] = 'I';
-        initialBoard[8][9] = 'T';
-        initialBoard[10][4] = 'B';
-        initialBoard[10][5] = 'A';
-        initialBoard[10][6] = 'R';
-        initialBoard[10][7] = 'S';
+        String[][] initialBoard = new String[15][15];
+        for (int i = 0; i < 15; i++) {
+            for (int j = 0; j < 15; j++) {
+                initialBoard[i][j] = "";
+            }
+        }
+        initialBoard[7][7] = "C";
+        initialBoard[8][7] = "A";
+        initialBoard[9][7] = "T";
+        initialBoard[8][6] = "B";
+        initialBoard[8][8] = "I";
+        initialBoard[8][9] = "T";
+        initialBoard[10][4] = "B";
+        initialBoard[10][5] = "A";
+        initialBoard[10][6] = "R";
+        initialBoard[10][7] = "S";
         testGame.setBoard(initialBoard);
         gameRepository.saveAndFlush(testGame);
 
         // Place new tiles to form multiple words
-        char[][] newBoard = new char[15][15];
+        String[][] newBoard = new String[15][15];
         for (int i = 0; i < initialBoard.length; i++) {
             System.arraycopy(initialBoard[i], 0, newBoard[i], 0, initialBoard[i].length);
         }
-        newBoard[9][5] = 'T';
-        newBoard[9][6] = 'A';
-        newBoard[9][8] = 'T';
-        newBoard[9][9] = 'O'; 
-        newBoard[9][10] = 'O';
+        newBoard[9][5] = "T";
+        newBoard[9][6] = "A";
+        newBoard[9][8] = "T";
+        newBoard[9][9] = "O"; 
+        newBoard[9][10] = "O";
 
         // Test
         List<String> words = moveValidatorService.validateMoveAndExtractWords(testGame.getId(), newBoard);
