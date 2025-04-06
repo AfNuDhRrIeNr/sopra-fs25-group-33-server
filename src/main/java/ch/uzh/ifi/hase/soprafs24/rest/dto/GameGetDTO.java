@@ -6,8 +6,6 @@ import ch.uzh.ifi.hase.soprafs24.entity.User;
 import java.time.LocalDateTime;
 import java.util.List;
 
-
-
 public class GameGetDTO {
     private Long id;
     private List<User> users;
@@ -16,14 +14,13 @@ public class GameGetDTO {
     private GameStatus gameStatus;
     private LocalDateTime startTime;
 
-    private char[][] board;
+    private String[][] board;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
     public List<User> getUsers() { return users; }
     public void setUsers(List<User> users) { this.users = users; }
-
 
     public User getHost() { return host; }
     public void setHost(User host) { this.host = host; }
@@ -34,11 +31,11 @@ public class GameGetDTO {
     public LocalDateTime getStartTime() { return startTime; }
     public void setStartTime(LocalDateTime startTime) { this.startTime = startTime; }
 
-    public char[][] getBoard() {
+    public String[][] getBoard() {
         return board;
     }
 
-    public void setBoard(char[][] board) {
+    public void setBoard(String[][] board) {
         this.board = board;
     }
 
@@ -49,5 +46,4 @@ public class GameGetDTO {
     public void setHostTurn(boolean hostTurn) {
         this.isHostTurn = hostTurn;
     }
-
 }
