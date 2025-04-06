@@ -192,12 +192,16 @@ class MoveValidatorServiceIntegrationTest {
     void validateMoveAndExtractWords_validMoveWithMultipleWords_success() {
         // Set up the board with existing tiles
         char[][] initialBoard = new char[15][15];
-        initialBoard[7][7] = 'H';
+        initialBoard[7][7] = 'C';
         initialBoard[8][7] = 'A';
         initialBoard[9][7] = 'T';
-        initialBoard[8][5] = 'E';
-        initialBoard[8][6] = 'S';
-        initialBoard[8][8] = 'O';
+        initialBoard[8][6] = 'B';
+        initialBoard[8][8] = 'I';
+        initialBoard[8][9] = 'T';
+        initialBoard[10][4] = 'B';
+        initialBoard[10][5] = 'A';
+        initialBoard[10][6] = 'R';
+        initialBoard[10][7] = 'S';
         testGame.setBoard(initialBoard);
         gameRepository.saveAndFlush(testGame);
 
@@ -206,16 +210,21 @@ class MoveValidatorServiceIntegrationTest {
         for (int i = 0; i < initialBoard.length; i++) {
             System.arraycopy(initialBoard[i], 0, newBoard[i], 0, initialBoard[i].length);
         }
-        newBoard[9][5] = 'P';
-        newBoard[9][6] = 'T';
+        newBoard[9][5] = 'T';
+        newBoard[9][6] = 'A';
+        newBoard[9][8] = 'T';
+        newBoard[9][9] = 'O'; 
+        newBoard[9][10] = 'O';
 
         // Test
         List<String> words = moveValidatorService.validateMoveAndExtractWords(testGame.getId(), newBoard);
 
         // Verify
-        assertEquals(3, words.size());
-        assertTrue(words.contains("PTT"));
-        assertTrue(words.contains("EP"));
-        assertTrue(words.contains("ST"));
+        assertEquals(5, words.size());
+        assertTrue(words.contains("TATTOO"));
+        assertTrue(words.contains("BAR"));
+        assertTrue(words.contains("TA"));
+        assertTrue(words.contains("IT"));   
+        assertTrue(words.contains("TO"));
     }
 }

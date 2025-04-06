@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
@@ -22,12 +23,16 @@ import java.util.List;
 public class MoveValidatorService {
 
     private final Logger log = LoggerFactory.getLogger(MoveValidatorService.class);
-
     private final GameRepository gameRepository;
+    private final RestTemplate restTemplate;
+    
+    // Simple cache to avoid repeated API calls for the same words
+    private static final String API_URL = "https://api.dictionaryapi.dev/api/v2/entries/en/";
 
     @Autowired
     public MoveValidatorService(GameRepository gameRepository) {
         this.gameRepository = gameRepository;
+        this.restTemplate = new RestTemplate();
     }
 
     /**
@@ -44,7 +49,6 @@ public class MoveValidatorService {
         // Get current board state
         char[][] currentBoard = game.getBoard();
         
-        
         try {
             // Validate move and get formed words
             List<String> formedWords = findWords(currentBoard, newBoard);
@@ -54,12 +58,40 @@ public class MoveValidatorService {
                 throw new IllegalArgumentException("No valid words formed");
             }
             
+            // Dictionary validation
+            for (String word : formedWords) {
+                if (!isValidWord(word)) {
+                    throw new IllegalArgumentException("Invalid word: " + word);
+                }
+            }
+            
             return formedWords;
         } 
         catch (IllegalArgumentException e) {
             log.error("Move validation failed: {}", e.getMessage());
-            // Convert validation exceptions to HTTP exceptions
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+        }
+    }
+    
+    /**
+     * Checks if a word exists in the dictionary
+     */
+    private boolean isValidWord(String word) {
+
+        String url = API_URL + word.toLowerCase();
+        
+        try {
+            // Make API request
+            Object response = restTemplate.getForObject(url, Object.class);
+            
+            // Check response type - valid words return an array
+            boolean isValid = response instanceof List;
+            
+            return isValid;
+        } 
+        catch (Exception e) {
+            log.error("Dictionary API error: {}", e.getMessage());
+            return false;
         }
     }
 
