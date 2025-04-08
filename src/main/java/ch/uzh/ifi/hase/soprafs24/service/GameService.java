@@ -57,7 +57,7 @@ public class GameService {
     }
 
     public Game updateGameStatus(Game game, GameStatus newGameStatus) throws GameNotFoundException {
-        if(game == null || game.getId() == null ||gameRepository.findById(game.getId()).isEmpty()) throw new GameNotFoundException("Game not found");
+        if(game == null || game.getId() == null || gameRepository.findById(game.getId()).isEmpty()) throw new GameNotFoundException("Game not found");
         if(newGameStatus == null) throw new InvalidGameStatusException("Game status cannot be null");
         GameStatus oldStatus = game.getGameStatus();
         if((newGameStatus == GameStatus.ONGOING && oldStatus == GameStatus.TERMINATED) || newGameStatus == GameStatus.CREATED )

@@ -1,9 +1,12 @@
 package ch.uzh.ifi.hase.soprafs24.controller;
 
+import ch.uzh.ifi.hase.soprafs24.constant.GameStatus;
+import ch.uzh.ifi.hase.soprafs24.constant.errors.InvalidGameStatusException;
 import ch.uzh.ifi.hase.soprafs24.entity.Game;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.GameGetDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.GamePostDTO;
+import ch.uzh.ifi.hase.soprafs24.rest.dto.GamePutDTO;
 import ch.uzh.ifi.hase.soprafs24.service.GameService;
 import ch.uzh.ifi.hase.soprafs24.service.UserService;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -11,11 +14,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -23,13 +28,14 @@ import java.util.Optional;
 
 import static org.hamcrest.Matchers.is;
 import static org.mockito.BDDMockito.given;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.mockito.Mockito.doThrow;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 
-@WebMvcTest(GameController.class)
+@SpringBootTest
+@AutoConfigureMockMvc
 public class GameControllerTest {
 
     @Autowired
@@ -110,6 +116,69 @@ public class GameControllerTest {
         mockMvc.perform(get("/games/1"))
             .andExpect(status().isNotFound());
     }
+
+    @Test
+    public void updateGame_validGameState_gameUpdated() throws Exception {
+        // Assign
+        Game game = new Game();
+        game.setId(1L);
+        User user = new User();
+        user.setId(12345L);
+        game.setHost(user);
+        game.setGameStatus(GameStatus.CREATED);
+
+        GamePutDTO gamePutDTO = new GamePutDTO();
+        gamePutDTO.setGameStatus(GameStatus.CREATED);
+
+        given(gameService.getGameById(1L)).willReturn(Optional.of(game));
+        given(userService.getUserByToken("Bearer test-token")).willReturn(Optional.of(user));
+        given(gameService.isUserInGame(game, user)).willReturn(true);
+        given(gameService.updateGameStatus(game, gamePutDTO.getGameStatus())).willReturn(game);
+
+        MockHttpServletRequestBuilder putRequest = put("/games/1")
+            .contentType(MediaType.APPLICATION_JSON)
+            .header("Authorization", "Bearer test-token")
+            .content(asJsonString(gamePutDTO));
+
+        // Act & Assert
+        mockMvc.perform(putRequest)
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id", is(game.getId().intValue())))
+            .andExpect(jsonPath("$.host.id", is(user.getId().intValue())))
+            .andExpect(jsonPath("$.gameStatus", is(gamePutDTO.getGameStatus().toString())));
+    }
+
+    @Test
+    public void updateGame_invalidGameState_gameNotUpdated() throws Exception {
+        // Assign
+        Game game = new Game();
+        game.setId(1L);
+        User user = new User();
+        user.setId(12345L);
+        game.setHost(user);
+
+        GamePutDTO gamePutDTO = new GamePutDTO();
+        gamePutDTO.setGameStatus(GameStatus.CREATED);
+
+        given(gameService.getGameById(1L)).willReturn(Optional.of(game));
+        given(userService.getUserByToken("Bearer test-token")).willReturn(Optional.of(user));
+        given(gameService.isUserInGame(game, user)).willReturn(true);
+        doThrow(new InvalidGameStatusException("Invalid game status transition message"))
+            .when(gameService).updateGameStatus(game, gamePutDTO.getGameStatus());
+        //given(gameService.updateGameStatus(game, gamePutDTO.getGameStatus())).willThrow(new InvalidGameStatusException("Invalid game status transition message"));
+
+        MockHttpServletRequestBuilder putRequest = put("/games/1")
+            .contentType(MediaType.APPLICATION_JSON)
+            .header("Authorization", "Bearer test-token")
+            .content(asJsonString(gamePutDTO));
+
+        // Act & Assert
+        ResultActions res = mockMvc.perform(putRequest)
+            .andExpect(status().isConflict());
+            //.andExpect(jsonPath("$.message", is("Invalid game status transition message")));
+        // TODO: TEST RESPONSE ERROR MESSAGE
+    }
+
 
     private String asJsonString(final Object object) {
         try {
