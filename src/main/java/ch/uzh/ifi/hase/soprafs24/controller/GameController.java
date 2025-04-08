@@ -1,15 +1,13 @@
 package ch.uzh.ifi.hase.soprafs24.controller;
 
+import ch.uzh.ifi.hase.soprafs24.constant.errors.GameInvitationNotFoundException;
 import ch.uzh.ifi.hase.soprafs24.constant.errors.GameNotFoundException;
 import ch.uzh.ifi.hase.soprafs24.constant.errors.InvalidGameStatusException;
 import ch.uzh.ifi.hase.soprafs24.constant.errors.UserNotFoundException;
 import ch.uzh.ifi.hase.soprafs24.entity.Game;
 import ch.uzh.ifi.hase.soprafs24.entity.GameInvitation;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
-import ch.uzh.ifi.hase.soprafs24.rest.dto.GameGetDTO;
-import ch.uzh.ifi.hase.soprafs24.rest.dto.GameInvitationPostDTO;
-import ch.uzh.ifi.hase.soprafs24.rest.dto.GameInvitationsGetDTO;
-import ch.uzh.ifi.hase.soprafs24.rest.dto.GamePutDTO;
+import ch.uzh.ifi.hase.soprafs24.rest.dto.*;
 import ch.uzh.ifi.hase.soprafs24.rest.mapper.DTOMapper;
 import ch.uzh.ifi.hase.soprafs24.service.GameInvitationService;
 import ch.uzh.ifi.hase.soprafs24.service.GameService;
@@ -20,6 +18,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 @RestController
@@ -118,4 +118,48 @@ public class GameController {
 
         return ResponseEntity.status(HttpStatus.CREATED).body(DTOMapper.INSTANCE.convertEntityToGameInvitationsGetDTO(gameInvitation));
     }
+
+    @ResponseStatus(HttpStatus.OK)
+    @GetMapping("/games/invitations/{userId}")
+    public ResponseEntity<List<GameInvitationsGetDTO>> getGameInvitations(@RequestHeader("Authorization") String token, @PathVariable Long userId) {
+        Optional<User> user = userService.getUserByToken(token);
+        if (user.isEmpty()) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token: User not found");
+
+        if (!user.get().getId().equals(userId))
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token: User not authorized to access this resource");
+        List<GameInvitation> gameInvitations = gameInvitationService.getGameInvitationsByTarget(user.get());
+        List<GameInvitationsGetDTO> gameInvitationsGetDTOs = new ArrayList<>();
+
+        for (GameInvitation gameInvitation : gameInvitations) {
+            gameInvitationsGetDTOs.add(DTOMapper.INSTANCE.convertEntityToGameInvitationsGetDTO(gameInvitation));
+        }
+        return ResponseEntity.ok(gameInvitationsGetDTOs);
+    }
+
+    @ResponseStatus(HttpStatus.OK)
+    @PutMapping("/games/invitations/{invitationId}")
+    public ResponseEntity<GameInvitationsGetDTO> updateGameInvitations(@RequestHeader("Authorization") String token, @PathVariable String invitationId, @RequestBody GameInvitationPutDTO gameInvitationPutDTO) throws GameInvitationNotFoundException {
+        if(token == null || token.isEmpty() || userService.getUserByToken(token).isEmpty()) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token: User not found");
+        if(invitationId == null || invitationId.isEmpty()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invitation ID cannot be null or empty");
+        if(gameInvitationPutDTO == null || gameInvitationPutDTO.getStatus() == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invitation status cannot be null");
+        if(userService.getUserByToken(token).get().getId() != gameInvitationService.getGameInvitationById(Long.valueOf(invitationId)).getTarget().getId()) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token: User not authorized to access this resource");
+
+        try {
+            GameInvitation gameInvitation = gameInvitationService.getGameInvitationById(Long.valueOf(invitationId));
+            gameInvitationService.updateGameInvitationStatus(gameInvitation, gameInvitationPutDTO.getStatus());
+        }
+        catch (GameInvitationNotFoundException | GameNotFoundException | UserNotFoundException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
+        }
+        catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage());
+        }
+        catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred:\n" + e.getMessage());
+        }
+
+
+        return null;
+    }
+
 }

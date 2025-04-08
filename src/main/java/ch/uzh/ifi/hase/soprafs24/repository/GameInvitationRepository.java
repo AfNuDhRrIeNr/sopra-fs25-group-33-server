@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 
@@ -18,7 +19,7 @@ public interface GameInvitationRepository extends JpaRepository<GameInvitation, 
 
         Optional<GameInvitation> findByGame(Game game);
 
-        Optional<GameInvitation> findBySender(User sender);
+        List<GameInvitation> findAllByTarget(User target);
 
         Optional<GameInvitation> findByTarget(User target);
 

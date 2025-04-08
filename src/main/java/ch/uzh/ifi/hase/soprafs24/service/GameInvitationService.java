@@ -1,5 +1,6 @@
 package ch.uzh.ifi.hase.soprafs24.service;
 
+import ch.uzh.ifi.hase.soprafs24.constant.UserStatus;
 import ch.uzh.ifi.hase.soprafs24.constant.errors.GameInvitationNotFoundException;
 import ch.uzh.ifi.hase.soprafs24.constant.errors.GameNotFoundException;
 import ch.uzh.ifi.hase.soprafs24.constant.errors.UserNotFoundException;
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -35,11 +37,18 @@ public class GameInvitationService {
             this.gameInvitationRepository = gameInvitationRepository;
         }
 
-        GameInvitation getGameInvitationById(Long id) throws GameInvitationNotFoundException {
+        public GameInvitation getGameInvitationById(Long id) throws GameInvitationNotFoundException {
             if(id == null) throw new IllegalArgumentException("Id cannot be null");
             return gameInvitationRepository.findById(id)
                     .orElseThrow(() -> new GameInvitationNotFoundException("Game invitation with id "+id.toString()+" not found"));
         }
+
+        public List<GameInvitation> getGameInvitationsByTarget(User sender) {
+            if(sender == null || sender.getId() == null) throw new IllegalArgumentException("Sender cannot be null");
+            return gameInvitationRepository.findAllByTarget(sender);
+        }
+
+
 
     public GameInvitation createGameInvitation(Optional<Game> optionalGame, Optional<User> optionalSender, Optional<User> optionalTarget) throws GameNotFoundException, UserNotFoundException {
 
@@ -58,6 +67,17 @@ public class GameInvitationService {
         gameInvitation.setTarget(target);
         gameInvitation.setStatus(InvitationStatus.PENDING);
         gameInvitation.setTimeStamp(LocalDateTime.now());
+        return gameInvitationRepository.saveAndFlush(gameInvitation);
+    }
+
+    public GameInvitation updateGameInvitationStatus(GameInvitation gameInvitation, InvitationStatus status) throws UserNotFoundException, GameNotFoundException {
+        if(gameInvitation == null || gameInvitation.getId() == null) throw new IllegalArgumentException("Game invitation cannot be null");
+        if(status == null) throw new IllegalArgumentException("Status cannot be null");
+        gameInvitation.setStatus(status);
+        if(status==InvitationStatus.ACCEPTED) {
+            userService.updateUserStatus(gameInvitation.getTarget(), UserStatus.IN_GAME);
+            gameService.joinGame(gameInvitation.getGame(), gameInvitation.getTarget());
+        }
         return gameInvitationRepository.saveAndFlush(gameInvitation);
     }
 }

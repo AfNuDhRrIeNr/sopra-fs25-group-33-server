@@ -57,7 +57,7 @@ public interface DTOMapper {
     GameInvitationsGetDTO convertEntityToGameInvitationsGetDTO(GameInvitation gameInvitation);
 
     // --- GameInvitationPutDTO -> GameInvitation ---
-    @Mapping(target = "status", expression = "java(InvitationStatus.valueOf(gameInvitationPutDTO.getStatus()))")
+    @Mapping(target = "status", source = "status")
     void updateGameInvitationFromPutDTO(GameInvitationPutDTO gameInvitationPutDTO, @MappingTarget GameInvitation gameInvitation);
 
     // Note: We assume Game and Target are set manually in service layer using gameId and targetId from PostDTO.
