@@ -18,7 +18,6 @@ public class GameStateDTO {
     private String[] userTiles;
     private String[][] board;
     private String action;
-    private List<String> validatedWords;
     private Long playerId;
 
     public boolean isValid() {
@@ -70,14 +69,6 @@ public class GameStateDTO {
 
     public void setAction(String action) {
         this.action = action;
-    }
-
-    public List<String> getValidatedWords() {
-        return validatedWords;
-    }
-
-    public void setValidatedWords(List<String> validatedWords) {
-        this.validatedWords = validatedWords;
     }
 
     public Long getPlayerId() {

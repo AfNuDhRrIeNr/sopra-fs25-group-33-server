@@ -194,7 +194,6 @@ public class WebSocketControllerTest {
         gameState.setAction("VALIDATE");
         gameState.setToken("test-token");
         gameState.setUserTiles(new String[]{"A", "B", "C", "D", "E"});
-        gameState.setValidatedWords(new ArrayList<>());
 
         
         String[][] board = new String[15][15];

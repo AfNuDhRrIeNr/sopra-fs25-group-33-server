@@ -56,9 +56,6 @@ public class WebSocketController {
                         gameState.getBoard()
                 );
                 
-                // Set the validated words in the response
-                gameState.setValidatedWords(formedWords);
-                
                 // Send validation success response ONLY to the requesting user
                 simpleMessagingTemplate.convertAndSend(
                         "/topic/game_states/users/" + gameState.getPlayerId(), 
