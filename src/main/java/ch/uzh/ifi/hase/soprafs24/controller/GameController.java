@@ -1,12 +1,17 @@
 package ch.uzh.ifi.hase.soprafs24.controller;
 
+import ch.uzh.ifi.hase.soprafs24.constant.errors.GameNotFoundException;
 import ch.uzh.ifi.hase.soprafs24.constant.errors.InvalidGameStatusException;
 import ch.uzh.ifi.hase.soprafs24.constant.errors.UserNotFoundException;
 import ch.uzh.ifi.hase.soprafs24.entity.Game;
+import ch.uzh.ifi.hase.soprafs24.entity.GameInvitation;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.GameGetDTO;
+import ch.uzh.ifi.hase.soprafs24.rest.dto.GameInvitationPostDTO;
+import ch.uzh.ifi.hase.soprafs24.rest.dto.GameInvitationsGetDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.GamePutDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.mapper.DTOMapper;
+import ch.uzh.ifi.hase.soprafs24.service.GameInvitationService;
 import ch.uzh.ifi.hase.soprafs24.service.GameService;
 import ch.uzh.ifi.hase.soprafs24.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,10 +27,13 @@ public class GameController {
 
     private final GameService gameService;
     private final UserService userService;
+
+    private final GameInvitationService gameInvitationService;
     @Autowired
-    GameController(GameService gameService, UserService userService) {
+    GameController(GameService gameService, UserService userService, GameInvitationService gameInvitationService) {
       this.gameService = gameService;
       this.userService = userService;
+      this.gameInvitationService = gameInvitationService;
     }
 
     @PostMapping("/games")
@@ -78,5 +86,36 @@ public class GameController {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "An unexpected error occurred:\n"+e.getMessage());
             }
         return ResponseEntity.ok(DTOMapper.INSTANCE.convertEntityToGameGetDTO(game));
+    }
+
+
+    @ResponseStatus(HttpStatus.CREATED)
+    @PostMapping("/games/invitations")
+    public ResponseEntity<GameInvitationsGetDTO> createGameInvitation(@RequestHeader("Authorization") String token, @RequestBody GameInvitationPostDTO gameInvitationPostDTO) {
+        Optional<User> senderUser = userService.getUserByToken(token);
+        if (senderUser.isEmpty()) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token: User not found");
+
+        Optional<User> targetUser = userService.getUserById(gameInvitationPostDTO.getTargetId());
+        if (targetUser.isEmpty()) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Target user not found");
+
+        if(senderUser.get().getId().equals(targetUser.get().getId())) throw new ResponseStatusException(HttpStatus.CONFLICT, "Cannot send game invitation to yourself!");
+
+        Optional<Game> game = gameService.getGameById(gameInvitationPostDTO.getGameId());
+
+        GameInvitation gameInvitation = null;
+        try {
+            gameInvitation = gameInvitationService.createGameInvitation(game,senderUser,targetUser);
+        }
+        catch (GameNotFoundException | UserNotFoundException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
+        }
+        catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage());
+        }
+        catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred:\n"+e.getMessage());
+        }
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(DTOMapper.INSTANCE.convertEntityToGameInvitationsGetDTO(gameInvitation));
     }
 }
