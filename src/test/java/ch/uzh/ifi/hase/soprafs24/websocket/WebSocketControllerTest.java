@@ -3,24 +3,32 @@ package ch.uzh.ifi.hase.soprafs24.websocket;
 import ch.uzh.ifi.hase.soprafs24.constant.MessageStatus;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.GameStateDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.MessageGameStateMessageDTO;
+import ch.uzh.ifi.hase.soprafs24.service.MoveValidatorService;
 import org.junit.jupiter.api.*;
 import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.web.server.LocalServerPort;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.HttpStatus;
 import org.springframework.messaging.converter.MappingJackson2MessageConverter;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.stomp.StompFrameHandler;
 import org.springframework.messaging.simp.stomp.StompHeaders;
 import org.springframework.messaging.simp.stomp.StompSession;
 import org.springframework.messaging.simp.stomp.StompSession.Subscription;
 import org.springframework.messaging.simp.stomp.StompSessionHandlerAdapter;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.socket.client.standard.StandardWebSocketClient;
 import org.springframework.web.socket.messaging.WebSocketStompClient;
 import org.springframework.web.socket.sockjs.client.SockJsClient;
 import org.springframework.web.socket.sockjs.client.Transport;
 import org.springframework.web.socket.sockjs.client.WebSocketTransport;
+import org.mockito.ArgumentCaptor;
 
 import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -28,6 +36,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -45,6 +56,15 @@ public class WebSocketControllerTest {
     private CompletableFuture<MessageGameStateMessageDTO> completableFuture;
     private StompSession session;
     private Subscription subscription;
+
+    @Autowired
+    private WebSocketController webSocketController;
+
+    @MockBean
+    private MoveValidatorService moveValidatorService;
+
+    @MockBean
+    private SimpMessagingTemplate messagingTemplate;
 
     @BeforeAll
     public void setUpOnce() {
@@ -161,6 +181,61 @@ public class WebSocketControllerTest {
         assertEquals(msg1.getMessageStatus(), MessageStatus.SUCCESS, "Status should be SUCCESS");
         assertEquals(msg2.getMessageStatus(), MessageStatus.SUCCESS, "Status should be SUCCESS");
     }
+
+    @Test
+    void testValidateMove_gameNotFound_sendsErrorToUserChannel() {
+        // Given
+        Long gameId = 1L;
+        Long playerId = 123L;
+
+        GameStateDTO gameState = new GameStateDTO();
+        gameState.setId(gameId);
+        gameState.setPlayerId(playerId);
+        gameState.setAction("VALIDATE");
+        gameState.setToken("test-token");
+        gameState.setUserTiles(new String[]{"A", "B", "C", "D", "E"});
+
+        
+        String[][] board = new String[15][15];
+        for (int i = 0; i < 15; i++) {
+            for (int j = 0; j < 15; j++) {
+                board[i][j] = "";
+            }
+        }
+
+        board[7][7] = "H";
+        board[7][8] = "E";
+        board[7][9] = "L";
+        board[7][10] = "L";
+        board[7][11] = "O";
+        gameState.setBoard(board);
+
+        //when
+        when(moveValidatorService.validateMoveAndExtractWords(eq(gameId), any()))
+                .thenThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found"));
+
+
+        MessageGameStateMessageDTO result = webSocketController.handleGameStates(
+                gameId.toString(), gameState);
+
+
+        assertNull(result);
+
+        ArgumentCaptor<String> destinationCaptor = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<MessageGameStateMessageDTO> messageCaptor = ArgumentCaptor.forClass(MessageGameStateMessageDTO.class);
+
+        verify(messagingTemplate).convertAndSend(
+                destinationCaptor.capture(), messageCaptor.capture());
+
+        assertEquals("/topic/game_states/users/" + playerId, destinationCaptor.getValue());
+
+        //then
+        MessageGameStateMessageDTO sentMessage = messageCaptor.getValue();
+        assertEquals(gameId, sentMessage.getGameId());
+        assertEquals(MessageStatus.VALIDATION_ERROR, sentMessage.getMessageStatus());
+        assertEquals("Game not found", sentMessage.getMessage());
+    }
+
     private static List<Transport> createTransportClient() {
         return List.of(new WebSocketTransport(new StandardWebSocketClient()));
     }
