@@ -10,6 +10,7 @@ import ch.uzh.ifi.hase.soprafs24.rest.dto.GameGetDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.GameInvitationPostDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.GamePostDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.GamePutDTO;
+import ch.uzh.ifi.hase.soprafs24.rest.mapper.DTOMapper;
 import ch.uzh.ifi.hase.soprafs24.service.GameInvitationService;
 import ch.uzh.ifi.hase.soprafs24.service.GameService;
 import ch.uzh.ifi.hase.soprafs24.service.UserService;
@@ -65,7 +66,7 @@ public class GameControllerTest {
 
         GamePostDTO gamePostDTO = new GamePostDTO();
         GameGetDTO gameGetDTO = new GameGetDTO();
-        gameGetDTO.setHost(user);
+        gameGetDTO.setHost(DTOMapper.INSTANCE.convertEntityToUserGetDTO(user));
 
 
         given(gameService.createGame(any(User.class))).willReturn(game);
@@ -108,7 +109,7 @@ public class GameControllerTest {
         game.setHost(user);
 
         GameGetDTO gameGetDTO = new GameGetDTO();
-        gameGetDTO.setHost(user);
+        gameGetDTO.setHost(DTOMapper.INSTANCE.convertEntityToUserGetDTO(user));
 
         given(gameService.getGameById(1L)).willReturn(Optional.of(game));
 

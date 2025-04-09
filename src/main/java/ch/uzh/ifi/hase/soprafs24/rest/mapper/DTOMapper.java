@@ -35,12 +35,16 @@ public interface DTOMapper {
   @Mapping(source = "id", target = "id")
   @Mapping(source = "username", target = "username")
   @Mapping(source = "status", target = "status")
+  @Mapping(source = "token", target = "token")
+  @Mapping(source = "inGame", target = "inGame")
+  @Mapping(source = "bestGamePlayed", target = "bestGamePlayed", qualifiedByName = "convertEntityToGameGetDTO")
+  @Mapping(source = "friends", target = "friends", qualifiedByName = "convertEntityToUserGetDTO")
   UserGetDTO convertEntityToUserGetDTO(User user);
 
 
-  @Mapping(source = "users", target = "users")
+  @Mapping(source = "users", target = "users", qualifiedByName = "convertEntityToUserGetDTO")
   @Mapping(source = "board", target = "board")
-  @Mapping(source = "host", target = "host")
+  @Mapping(source = "host", target = "host", qualifiedByName = "convertEntityToUserGetDTO")
   @Mapping(source = "gameStatus", target = "gameStatus")
   @Mapping(source = "hostTurn", target = "hostTurn") // Needs to be hostTurn instead of IsHostTurn (weird JPA internal implementation)
   @Mapping(source = "startTime", target = "startTime")

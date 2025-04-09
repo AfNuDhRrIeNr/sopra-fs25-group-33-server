@@ -8,8 +8,8 @@ import java.util.List;
 
 public class GameGetDTO {
     private Long id;
-    private List<User> users;
-    private User host;
+    private List<UserGetDTO> users;
+    private UserGetDTO host;
     private boolean isHostTurn;
     private GameStatus gameStatus;
     private LocalDateTime startTime;
@@ -19,11 +19,11 @@ public class GameGetDTO {
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
-    public List<User> getUsers() { return users; }
-    public void setUsers(List<User> users) { this.users = users; }
+    public List<UserGetDTO> getUsers() { return users; }
+    public void setUsers(List<UserGetDTO> users) { this.users = users; }
 
-    public User getHost() { return host; }
-    public void setHost(User host) { this.host = host; }
+    public UserGetDTO getHost() { return host; }
+    public void setHost(UserGetDTO host) { this.host = host; }
 
     public GameStatus getGameStatus() { return gameStatus; }
     public void setGameStatus(GameStatus gameStatus) { this.gameStatus = gameStatus; }
