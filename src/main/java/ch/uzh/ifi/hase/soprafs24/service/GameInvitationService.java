@@ -23,8 +23,7 @@ import java.util.Optional;
 @Service
 @Transactional
 public class GameInvitationService {
-        private final Logger log = LoggerFactory.getLogger(ch.uzh.ifi.hase.soprafs24.service.GameService.class);
-
+        private final Logger log = LoggerFactory.getLogger(GameInvitationService.class);
         private final GameService gameService;
 
         private final UserService userService;
