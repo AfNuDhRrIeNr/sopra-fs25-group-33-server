@@ -1,10 +1,14 @@
 package ch.uzh.ifi.hase.soprafs24.entity;
 
 import ch.uzh.ifi.hase.soprafs24.constant.GameStatus;
+import ch.uzh.ifi.hase.soprafs24.constant.LetterCount;
 
 import javax.persistence.*;
+import java.util.HashMap;
+import java.util.Random;
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,6 +36,12 @@ public class Game implements Serializable {
 
     @Column(name = "start_time")
     private LocalDateTime startTime;
+
+    @ElementCollection
+    @CollectionTable(name = "game_letter_bag", joinColumns = @JoinColumn(name = "game_id"))
+    @MapKeyColumn(name = "letter")
+    @Column(name = "count")
+    private Map<Character, Integer> letterBag = new HashMap<>(LetterCount.INITIAL_LETTER_COUNTS);
 
     // Store board as a string - much simpler than bytes
     @Column(length = 225) // 15x15=225 characters
@@ -119,5 +129,44 @@ public class Game implements Serializable {
 
     public boolean isHostTurn() { return isHostTurn; }
     public void setHostTurn(boolean hostTurn) { this.isHostTurn = hostTurn; }
+
+    public Map<Character, Integer> getLetterCounts() { return letterBag;}
+    public void setLetterBag(Map<Character, Integer> letterBag) { this.letterBag = letterBag; }
+
+    public List<Character> drawLetters(int count) {
+        List<Character> drawnLetters = new ArrayList<>();
+        Random random = new Random();
+    
+        for (int i = 0; i < count; i++) {
+            List<Character> availableLetters = letterBag.entrySet().stream()
+                .filter(entry -> entry.getValue() > 0) 
+                .map(Map.Entry::getKey)
+                .toList();
+    
+            if (availableLetters.isEmpty()) {
+                break;
+            }
+            char selectedLetter = availableLetters.get(random.nextInt(availableLetters.size()));
+            drawnLetters.add(selectedLetter);
+    
+            letterBag.put(selectedLetter, letterBag.get(selectedLetter) - 1);
+        }
+    
+        return drawnLetters;
+    }
+
+    public int getRemainingLetterCount(char letter) {    
+        return letterBag.getOrDefault(letter, 0);
+    }
+
+    public List<Character> exchangeLetters(List<Character> currentLetters) {
+        // Usage:
+        // List<Character> currentLetters = List.of('A', 'B', 'C');
+        // List<Character> newLetters = game.exchangeLetters(currentLetters);
+        for (char letter : currentLetters) {
+            letterBag.put(letter, letterBag.getOrDefault(letter, 0) + 1);
+        }
+        return drawLetters(currentLetters.size());
+    }
 }
 
