@@ -157,9 +157,7 @@ public class GameController {
         catch (Exception e) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred:\n" + e.getMessage());
         }
-
-
-        return null;
+        return ResponseEntity.ok(DTOMapper.INSTANCE.convertEntityToGameInvitationsGetDTO(gameInvitationService.getGameInvitationById(Long.valueOf(invitationId))));
     }
 
 }
