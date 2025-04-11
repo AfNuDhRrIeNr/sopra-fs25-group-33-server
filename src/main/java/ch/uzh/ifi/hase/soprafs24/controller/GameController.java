@@ -14,6 +14,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import java.util.Optional;
+import java.util.Map;
+import java.util.HashMap;
 
 import java.util.Optional;
 
@@ -32,6 +35,11 @@ public class GameController {
     @ResponseStatus(HttpStatus.CREATED)
     @ResponseBody
     public GameGetDTO createGame( @RequestHeader("Authorization") String token) {
+        System.out.println(token);
+        if (token.startsWith("Bearer ")) {
+            token = token.substring(7); // Remove "Bearer " (7 characters)
+        }
+        System.out.println(token);
         Optional<User> user = userService.getUserByToken(token);
         if (user.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,"Invalid token: User not found");
@@ -53,6 +61,20 @@ public class GameController {
         return gameService.getGameById(id)
             .map(game -> ResponseEntity.ok(DTOMapper.INSTANCE.convertEntityToGameGetDTO(game)))
             .orElse(ResponseEntity.notFound().build());
+    }
+
+
+    @GetMapping("/gamestate/users/{userId}/remaining/{letter}")
+    public ResponseEntity<Map<String, Object>> getRemaining(
+            @PathVariable String userId,
+            @PathVariable String letter) {
+        
+        int remaining = 11; // get the value from your dictionary
+        Map<String, Object> response = new HashMap<>();
+        response.put("letter", letter);
+        response.put("remaining", remaining);
+    
+        return ResponseEntity.ok(response);
     }
 
     @ResponseStatus(HttpStatus.OK)
