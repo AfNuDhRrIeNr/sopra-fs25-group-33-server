@@ -7,26 +7,29 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.springframework.web.server.ResponseStatusException;
+import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.web.client.RestTemplate;
 
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 class MoveValidatorServiceTest {
 
     @Mock
     private GameRepository gameRepository;
+    
+    @Mock
+    private RestTemplate restTemplate;
 
     @InjectMocks
     private MoveValidatorService moveValidatorService;
 
     private Game testGame;
-    private char[][] emptyBoard;
-    private char[][] boardWithH;
-    private char[][] boardWithHAT;
+    private String[][] boardWithH;
+    private String[][] boardWithHAT;
 
     @BeforeEach
     void setUp() {
@@ -36,97 +39,315 @@ class MoveValidatorServiceTest {
         testGame = new Game();
         testGame.setId(1L);
         
-        // Create test boards
-        emptyBoard = new char[15][15];
+        // Create test boards to help with redundancy
+        boardWithH = new String[15][15];
+        for (int i = 0; i < 15; i++) {
+            for (int j = 0; j < 15; j++) {
+                boardWithH[i][j] = "";
+            }
+        }
+        boardWithH[7][7] = "H";
         
-        boardWithH = new char[15][15];
-        boardWithH[7][7] = 'H';
+        boardWithHAT = new String[15][15];
+        for (int i = 0; i < 15; i++) {
+            for (int j = 0; j < 15; j++) {
+                boardWithHAT[i][j] = "";
+            }
+        }
+        boardWithHAT[7][7] = "H";
+        boardWithHAT[7][8] = "A";
+        boardWithHAT[7][9] = "T";
         
-        boardWithHAT = new char[15][15];
-        boardWithHAT[7][7] = 'H';
-        boardWithHAT[7][8] = 'A';
-        boardWithHAT[7][9] = 'T';
+        // Mocked RestTemplate
+        ReflectionTestUtils.setField(moveValidatorService, "restTemplate", restTemplate);
+        
+        // Mock valid dictionary responses to test the isValidWord method in the service
+        mockDictionaryForWord("hat", true);
+        mockDictionaryForWord("hello", true);
+        mockDictionaryForWord("world", true);
     }
-
-    @Test
-    void validateMoveAndExtractWords_gameNotFound_throwsException() {
-        // Mock repository behavior
-        when(gameRepository.findById(anyLong())).thenReturn(Optional.empty());
-
-        // Test and assert
-        assertThrows(ResponseStatusException.class, () -> 
-            moveValidatorService.validateMoveAndExtractWords(1L, emptyBoard)
-        );
+    
+    private void mockDictionaryForWord(String word, boolean isValid) {
+        Object response = isValid ? 
+            Collections.singletonList(new HashMap<>()) : // Valid word returns a list
+            new HashMap<>(); // Invalid word returns a map (in the external API)
+        when(restTemplate.getForObject(contains(word.toLowerCase()), eq(Object.class)))
+            .thenReturn(response);
     }
+    
 
+    // Tests for dictionary (word) validation with external API
+    
     @Test
-    void validateMoveAndExtractWords_firstMove_success() {
-        // Setup
-        testGame.setBoard(emptyBoard);
-        when(gameRepository.findById(1L)).thenReturn(Optional.of(testGame));
+    void isValidWord_validWord_returnsTrue() {
+        // Given
+        // Dictionary response for "hello" is already mocked in setUp()
         
-        // First move with H in center
-        char[][] firstMove = new char[15][15];
-        firstMove[7][7] = 'H';
-        firstMove[7][8] = 'E';
+        // When
+        boolean result = ReflectionTestUtils.invokeMethod(moveValidatorService, "isValidWord", "hello");
         
-        // Test
-        List<String> words = moveValidatorService.validateMoveAndExtractWords(1L, firstMove);
-        
-        // Verify
-        verify(gameRepository).findById(1L);
-        assertEquals(1, words.size());
-        assertEquals("HE", words.get(0));
+        // Then
+        assertTrue(result);
+        verify(restTemplate).getForObject(contains("hello"), eq(Object.class));
     }
-
+    
     @Test
-    void validateMoveAndExtractWords_addToExistingWord_success() {
-        // Setup
-        testGame.setBoard(boardWithH);
-        when(gameRepository.findById(1L)).thenReturn(Optional.of(testGame));
+    void isValidWord_invalidWord_returnsFalse() {
+        // Given
+        String invalidWord = "xyzabc";
+        mockDictionaryForWord(invalidWord, false);
         
-        // Test
-        List<String> words = moveValidatorService.validateMoveAndExtractWords(1L, boardWithHAT);
+        // When
+        boolean result = ReflectionTestUtils.invokeMethod(moveValidatorService, "isValidWord", invalidWord);
         
-        // Verify
-        verify(gameRepository).findById(1L);
+        // Then
+        assertFalse(result);
+    }
+    
+
+    // Tests for word finding
+    
+    @Test
+    void findWords_horizontalWord_returnsCorrectWords() {
+        // Given
+        String[][] oldBoard = new String[15][15];
+        for (int i = 0; i < 15; i++) {
+            for (int j = 0; j < 15; j++) {
+                oldBoard[i][j] = "";
+            }
+        }
+        oldBoard[7][7] = "H";
+        
+        String[][] newBoard = new String[15][15];
+        for (int i = 0; i < 15; i++) {
+            for (int j = 0; j < 15; j++) {
+                newBoard[i][j] = "";
+            }
+        }
+        newBoard[7][7] = "H";
+        newBoard[7][8] = "A";
+        newBoard[7][9] = "T";
+        
+        // When
+        List<String> words = ReflectionTestUtils.invokeMethod(moveValidatorService, "findWords", oldBoard, newBoard);
+        
+        // Then
         assertEquals(1, words.size());
         assertEquals("HAT", words.get(0));
     }
+    
 
+    // Tests for validatePlacement
+    
     @Test
-    void validateMoveAndExtractWords_invalidPlacement_throwsException() {
-        // Setup
-        testGame.setBoard(emptyBoard);
-        when(gameRepository.findById(1L)).thenReturn(Optional.of(testGame));
+    void validatePlacement_firstMoveNotAtCenter_throwsException() {
+        // Given
+        String[][] emptyBoard = new String[15][15];
+        for (int i = 0; i < 15; i++) {
+            for (int j = 0; j < 15; j++) {
+                emptyBoard[i][j] = "";
+            }
+        }
+        List<int[]> positionsNotAtCenter = Collections.singletonList(new int[]{0, 0});
         
-        // First move not at center
-        char[][] invalidFirstMove = new char[15][15];
-        invalidFirstMove[0][0] = 'X';
+        String[][] newBoard = new String[15][15];
+        for (int i = 0; i < 15; i++) {
+            for (int j = 0; j < 15; j++) {
+                newBoard[i][j] = "";
+            }
+        }
+        newBoard[0][0] = "X";
         
-        // Test and assert
-        assertThrows(ResponseStatusException.class, () -> 
-            moveValidatorService.validateMoveAndExtractWords(1L, invalidFirstMove)
-        );
+        // When/Then
+        assertThrows(IllegalArgumentException.class, () ->
+            ReflectionTestUtils.invokeMethod(moveValidatorService, "validatePlacement", 
+                emptyBoard, positionsNotAtCenter, newBoard));
     }
-
+    
     @Test
-    void validateMoveAndExtractWords_formsPerpendicular_success() {
-        // Setup
-        testGame.setBoard(boardWithH);
-        when(gameRepository.findById(1L)).thenReturn(Optional.of(testGame));
+    void validatePlacement_emptyBoardMoveNotCoveringCenter_throwsException() {
+        // Given
+        String[][] emptyBoard = new String[15][15];
+        for (int i = 0; i < 15; i++) {
+            for (int j = 0; j < 15; j++) {
+                emptyBoard[i][j] = "";
+            }
+        }
         
-        // Form perpendicular word "HE"
-        char[][] perpMove = new char[15][15];
-        perpMove[7][7] = 'H';
-        perpMove[8][7] = 'E';
+        String[][] newBoard = new String[15][15];
+        for (int i = 0; i < 15; i++) {
+            for (int j = 0; j < 15; j++) {
+                newBoard[i][j] = "";
+            }
+        }
+        newBoard[5][5] = "H";
+        newBoard[5][6] = "E";
+        newBoard[5][7] = "L";
+        newBoard[5][8] = "L";
+        newBoard[5][9] = "O";
         
-        // Test
-        List<String> words = moveValidatorService.validateMoveAndExtractWords(1L, perpMove);
+        List<int[]> positions = Arrays.asList(
+            new int[]{5, 5},
+            new int[]{5, 6},
+            new int[]{5, 7},
+            new int[]{5, 8},
+            new int[]{5, 9}
+        );
         
-        // Verify
-        verify(gameRepository).findById(1L);
-        assertEquals(1, words.size());
-        assertEquals("HE", words.get(0));
+        // When/Then
+        assertThrows(IllegalArgumentException.class, () ->
+            ReflectionTestUtils.invokeMethod(moveValidatorService, "validatePlacement", 
+                emptyBoard, positions, newBoard));
+    }
+    
+    @Test
+    void validatePlacement_emptyBoardWithHorizontalWordThroughCenter_noException() {
+        // Given
+        String[][] emptyBoard = new String[15][15];
+        for (int i = 0; i < 15; i++) {
+            for (int j = 0; j < 15; j++) {
+                emptyBoard[i][j] = "";
+            }
+        }
+        
+        String[][] newBoard = new String[15][15];
+        for (int i = 0; i < 15; i++) {
+            for (int j = 0; j < 15; j++) {
+                newBoard[i][j] = "";
+            }
+        }
+        newBoard[7][5] = "H";
+        newBoard[7][6] = "E";
+        newBoard[7][7] = "L";
+        newBoard[7][8] = "L";
+        newBoard[7][9] = "O";
+        
+        List<int[]> positions = Arrays.asList(
+            new int[]{7, 5},
+            new int[]{7, 6},
+            new int[]{7, 7},
+            new int[]{7, 8},
+            new int[]{7, 9}
+        );
+        
+        // When/Then
+        assertDoesNotThrow(() ->
+            ReflectionTestUtils.invokeMethod(moveValidatorService, "validatePlacement", 
+                emptyBoard, positions, newBoard));
+    }
+    
+    // Tests for directional checks
+    
+    @Test
+    void isHorizontal_allSameRow_returnsTrue() {
+        // Given
+        List<int[]> horizontalPositions = Arrays.asList(
+            new int[]{5, 5},
+            new int[]{5, 6},
+            new int[]{5, 7}
+        );
+        
+        // When
+        boolean result = ReflectionTestUtils.invokeMethod(moveValidatorService, "isHorizontal", horizontalPositions);
+        
+        // Then
+        assertTrue(result);
+    }
+    
+    @Test
+    void isVertical_allSameColumn_returnsTrue() {
+        // Given
+        List<int[]> verticalPositions = Arrays.asList(
+            new int[]{5, 5},
+            new int[]{6, 5},
+            new int[]{7, 5}
+        );
+        
+        // When
+        boolean result = ReflectionTestUtils.invokeMethod(moveValidatorService, "isVertical", verticalPositions);
+        
+        // Then
+        assertTrue(result);
+    }
+    
+
+    // Tests for findWordAt
+    
+    @Test
+    void findWordAt_horizontalWord_returnsFullWord() {
+        // Given
+        String[][] board = new String[15][15];
+        for (int i = 0; i < 15; i++) {
+            for (int j = 0; j < 15; j++) {
+                board[i][j] = "";
+            }
+        }
+        board[7][7] = "H";
+        board[7][8] = "E";
+        board[7][9] = "L";
+        board[7][10] = "L";
+        board[7][11] = "O";
+        
+        // When
+        String word = ReflectionTestUtils.invokeMethod(moveValidatorService, "findWordAt", 
+            board, 7, 9, true);
+        
+        // Then
+        assertEquals("HELLO", word);
+    }
+    
+    @Test
+    void findWordAt_verticalWord_returnsFullWord() {
+        // Given
+        String[][] board = new String[15][15];
+        for (int i = 0; i < 15; i++) {
+            for (int j = 0; j < 15; j++) {
+                board[i][j] = "";
+            }
+        }
+        board[5][7] = "W";
+        board[6][7] = "O";
+        board[7][7] = "R";
+        board[8][7] = "L";
+        board[9][7] = "D";
+        
+        // When
+        String word = ReflectionTestUtils.invokeMethod(moveValidatorService, "findWordAt", 
+            board, 7, 7, false);
+        
+        // Then
+        assertEquals("WORLD", word);
+    }
+    
+    @Test
+    void isHorizontal_differentRows_returnsFalse() {
+        // Given
+        List<int[]> nonHorizontalPositions = Arrays.asList(
+            new int[]{5, 5},
+            new int[]{6, 6},
+            new int[]{7, 7}
+        );
+        
+        // When
+        boolean result = ReflectionTestUtils.invokeMethod(moveValidatorService, "isHorizontal", nonHorizontalPositions);
+        
+        // Then
+        assertFalse(result);
+    }
+    
+    @Test
+    void isVertical_differentColumns_returnsFalse() {
+        // Given
+        List<int[]> nonVerticalPositions = Arrays.asList(
+            new int[]{5, 5},
+            new int[]{6, 6},
+            new int[]{7, 7}
+        );
+        
+        // When
+        boolean result = ReflectionTestUtils.invokeMethod(moveValidatorService, "isVertical", nonVerticalPositions);
+        
+        // Then
+        assertFalse(result);
     }
 }
