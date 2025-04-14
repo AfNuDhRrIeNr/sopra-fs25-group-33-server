@@ -2,6 +2,7 @@ package ch.uzh.ifi.hase.soprafs24.service;
 
 import ch.uzh.ifi.hase.soprafs24.constant.UserStatus;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
+import ch.uzh.ifi.hase.soprafs24.enums.InvitationStatus;
 import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -80,6 +81,10 @@ public class UserService {
   public Optional<User> getUserByToken(String token) {
     return userRepository.findByToken(token);
     }
+
+    public Optional<User> getUserById(Long id) {
+        return userRepository.findById(id);
+    }
   public User authenticateUser(User userInput) {
     // Find user by username
     User user = userRepository.findByUsername(userInput.getUsername());
@@ -97,4 +102,9 @@ public class UserService {
     // Return authenticated user with token
     return user;
   }
+
+    public User updateUserStatus(User user, UserStatus userStatus) {
+      user.setStatus(userStatus);
+      return userRepository.saveAndFlush(user);
+    }
 }

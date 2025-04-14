@@ -3,10 +3,15 @@ package ch.uzh.ifi.hase.soprafs24.controller;
 import ch.uzh.ifi.hase.soprafs24.constant.GameStatus;
 import ch.uzh.ifi.hase.soprafs24.constant.errors.InvalidGameStatusException;
 import ch.uzh.ifi.hase.soprafs24.entity.Game;
+import ch.uzh.ifi.hase.soprafs24.entity.GameInvitation;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
+import ch.uzh.ifi.hase.soprafs24.enums.InvitationStatus;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.GameGetDTO;
+import ch.uzh.ifi.hase.soprafs24.rest.dto.GameInvitationPostDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.GamePostDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.GamePutDTO;
+import ch.uzh.ifi.hase.soprafs24.rest.mapper.DTOMapper;
+import ch.uzh.ifi.hase.soprafs24.service.GameInvitationService;
 import ch.uzh.ifi.hase.soprafs24.service.GameService;
 import ch.uzh.ifi.hase.soprafs24.service.UserService;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -27,6 +32,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.Optional;
 
 import static org.hamcrest.Matchers.is;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doThrow;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -47,6 +53,9 @@ public class GameControllerTest {
     @MockBean
     private UserService userService;
 
+    @MockBean
+    private GameInvitationService gameInvitationService;
+
     @Test
     public void createGame_validInput_gameCreated() throws Exception {
         Game game = new Game();
@@ -57,10 +66,10 @@ public class GameControllerTest {
 
         GamePostDTO gamePostDTO = new GamePostDTO();
         GameGetDTO gameGetDTO = new GameGetDTO();
-        gameGetDTO.setHost(user);
+        gameGetDTO.setHost(DTOMapper.INSTANCE.convertEntityToUserGetDTO(user));
 
 
-        given(gameService.createGame(Mockito.any(User.class))).willReturn(game);
+        given(gameService.createGame(any(User.class))).willReturn(game);
         given(userService.getUserByToken("Bearer test-token")).willReturn(Optional.of(user));
 
         MockHttpServletRequestBuilder postRequest = post("/games")
@@ -100,7 +109,7 @@ public class GameControllerTest {
         game.setHost(user);
 
         GameGetDTO gameGetDTO = new GameGetDTO();
-        gameGetDTO.setHost(user);
+        gameGetDTO.setHost(DTOMapper.INSTANCE.convertEntityToUserGetDTO(user));
 
         given(gameService.getGameById(1L)).willReturn(Optional.of(game));
 
@@ -177,6 +186,57 @@ public class GameControllerTest {
             .andExpect(status().isConflict());
             //.andExpect(jsonPath("$.message", is("Invalid game status transition message")));
         // TODO: TEST RESPONSE ERROR MESSAGE
+    }
+
+    @Test
+    void createGameInvitation_validRequest_returnsCreated() throws Exception {
+        User sender = new User(); sender.setId(1L);
+        User target = new User(); target.setId(2L);
+        Game game = new Game(); game.setId(1L);
+        GameInvitation invitation = new GameInvitation();
+        invitation.setId(1L); invitation.setSender(sender); invitation.setTarget(target); invitation.setGame(game); invitation.setStatus(InvitationStatus.PENDING);
+
+        GameInvitationPostDTO dto = new GameInvitationPostDTO();
+        dto.setTargetId(2L); dto.setGameId(1L);
+
+        Mockito.when(userService.getUserByToken("token")).thenReturn(Optional.of(sender));
+        Mockito.when(userService.getUserById(2L)).thenReturn(Optional.of(target));
+        Mockito.when(gameService.getGameById(1L)).thenReturn(Optional.of(game));
+        Mockito.when(gameInvitationService.createGameInvitation(any(), any(), any())).thenReturn(invitation);
+
+        mockMvc.perform(post("/games/invitations")
+                        .header("Authorization", "token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(new ObjectMapper().writeValueAsString(dto)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.game.id").value(1L));
+    }
+
+    @Test
+    void createGameInvitation_missingToken_returnsUnauthorized() throws Exception {
+        Mockito.when(userService.getUserByToken(any())).thenReturn(Optional.empty());
+
+        mockMvc.perform(post("/games/invitations")
+                        .header("Authorization", "fasdfad")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(new ObjectMapper().writeValueAsString(new GameInvitationPostDTO())))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void createGameInvitation_inviteSelf_returnsConflict() throws Exception {
+        User sender = new User(); sender.setId(1L);
+        GameInvitationPostDTO dto = new GameInvitationPostDTO();
+        dto.setTargetId(1L); dto.setGameId(1L);
+
+        Mockito.when(userService.getUserByToken("token")).thenReturn(Optional.of(sender));
+        Mockito.when(userService.getUserById(1L)).thenReturn(Optional.of(sender));
+
+        mockMvc.perform(post("/games/invitations")
+                        .header("Authorization", "token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(new ObjectMapper().writeValueAsString(dto)))
+                .andExpect(status().isConflict());
     }
 
 

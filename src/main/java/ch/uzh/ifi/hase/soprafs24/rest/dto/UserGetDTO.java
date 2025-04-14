@@ -2,14 +2,45 @@ package ch.uzh.ifi.hase.soprafs24.rest.dto;
 
 import ch.uzh.ifi.hase.soprafs24.constant.UserStatus;
 
+import java.util.Set;
+
 public class UserGetDTO {
 
   private Long id;
   private String username;
   private UserStatus status;
   private String token;
+  private boolean isInGame;
 
-  public Long getId() {
+  private GameGetDTO bestGamePlayed;
+
+  private Set<UserGetDTO> friends;
+
+  public boolean isInGame() {
+      return isInGame;
+    }
+
+  public void setInGame(boolean inGame) {
+        isInGame = inGame;
+  }
+
+  public GameGetDTO getBestGamePlayed() {
+        return bestGamePlayed;
+    }
+
+  public void setBestGamePlayed(GameGetDTO bestGamePlayed) {
+        this.bestGamePlayed = bestGamePlayed;
+    }
+
+    public Set<UserGetDTO> getFriends() {
+        return friends;
+    }
+
+    public void setFriends(Set<UserGetDTO> friends) {
+        this.friends = friends;
+    }
+
+    public Long getId() {
     return id;
   }
 
