@@ -79,7 +79,7 @@ public class FriendRequestService {
         if(status == null) throw new IllegalArgumentException("Status cannot be null");
 
         if(friendRequest.getStatus() != InvitationStatus.PENDING && status == InvitationStatus.PENDING)
-            throw new IllegalArgumentException("Cannot change status from"+friendRequest.getStatus().toString()+"to PENDING");
+            throw new IllegalArgumentException("Cannot change status from " + friendRequest.getStatus().toString() + " to PENDING");
 
         friendRequest.setStatus(status);
         return friendRequestRepository.saveAndFlush(friendRequest);
