@@ -113,7 +113,7 @@ public class FriendRequestServiceTest {
 
         assertNotNull(createdRequest.getId());
         assertEquals(InvitationStatus.PENDING, createdRequest.getStatus());
-        assertEquals(createdRequest.getMessage(), "Hello");
+        assertEquals("Hello", createdRequest.getMessage());
         assertEquals(createdRequest.getSender(), sender);
         assertEquals(createdRequest.getTarget(), target);
         assertNotNull(createdRequest.getTimeStamp());
