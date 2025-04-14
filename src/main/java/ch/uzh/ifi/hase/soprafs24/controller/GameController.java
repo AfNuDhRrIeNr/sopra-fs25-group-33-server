@@ -14,6 +14,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import java.util.List;
 
 import java.util.Optional;
 
@@ -79,4 +80,36 @@ public class GameController {
             }
         return ResponseEntity.ok(DTOMapper.INSTANCE.convertEntityToGameGetDTO(game));
     }
+
+
+    @ResponseStatus(HttpStatus.OK)
+    @PutMapping("/games/{id}/assign")
+    public GamePutDTO assignTiles(@PathVariable Long id, @RequestParam int count) {
+        Game game = gameService.getGameById(id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found"));
+        List<Character> newTiles =gameService.drawLetters(game, count);
+        GamePutDTO response = new GamePutDTO();
+        response.setNewTiles(newTiles);
+        return response;
+    }
+
+    @ResponseStatus(HttpStatus.OK)
+    @PutMapping("/games/{id}/exchange")
+    public GamePutDTO exchangeTiles(@PathVariable Long id, @RequestBody List<Character> tilesForExchange) {
+        Game game = gameService.getGameById(id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found"));
+        List<Character> newTiles = gameService.exchangeTiles(game, tilesForExchange);
+        GamePutDTO response = new GamePutDTO();
+        response.setNewTiles(newTiles);
+        return response;
+    }
+
+    @GetMapping("/games/{id}/letters/{letter}")
+    public int getRemainingLetters(@PathVariable Long id, @PathVariable char letter) {
+        Game game = gameService.getGameById(id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found"));
+        return gameService.countLettersInBag(game, letter);
+    }
+
+
 }

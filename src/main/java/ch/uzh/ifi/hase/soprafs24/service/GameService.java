@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.util.List;
 
 import java.util.Optional;
 
@@ -64,5 +65,22 @@ public class GameService {
             throw new InvalidGameStatusException("Invalid game status transition from " + oldStatus + " to " + newGameStatus);
         game.setGameStatus(newGameStatus);
         return gameRepository.saveAndFlush(game);
+    }
+
+    public List<Character> drawLetters(Game game, int count) {
+        List<Character> assignedLetters = game.drawLetters(count);
+        gameRepository.saveAndFlush(game);
+        return assignedLetters;
+    }
+
+    public List<Character> exchangeTiles(Game game, List<Character> tilesToExchange) {
+        List<Character> exchangedTiles = game.exchangeTiles(tilesToExchange);
+        gameRepository.saveAndFlush(game);
+        return exchangedTiles;
+    }
+
+    public int countLettersInBag (Game game, Character letter) {
+        int letterCount = game.getRemainingLetterCount(letter);
+        return letterCount;
     }
 }

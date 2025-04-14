@@ -159,7 +159,7 @@ public class Game implements Serializable {
         return letterBag.getOrDefault(letter, 0);
     }
 
-    public List<Character> exchangeLetters(List<Character> currentLetters) {
+    public List<Character> exchangeTiles(List<Character> currentLetters) {
         // Usage:
         // List<Character> currentLetters = List.of('A', 'B', 'C');
         // List<Character> newLetters = game.exchangeLetters(currentLetters);
