@@ -33,9 +33,10 @@ public class GameController {
     @ResponseStatus(HttpStatus.CREATED)
     @ResponseBody
     public GameGetDTO createGame( @RequestHeader("Authorization") String token) {
+        token = token.substring(7);
         Optional<User> user = userService.getUserByToken(token);
         if (user.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,"Invalid token: User not found");
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,"Invalid token: User not found" + token);
         }
 
         try {
