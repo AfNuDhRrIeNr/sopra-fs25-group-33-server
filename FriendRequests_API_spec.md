@@ -8,7 +8,7 @@ This document outlines the RESTful API for managing friend requests between user
 
 Retrieve all friend requests for the authenticated user.
 
-- **URL:** `http://localhost:8080/users/friendrequests`
+- **URL:** `http://localhost:8080/users/friendRequests`
 - **Method:** `GET`
 - **Headers:**
     - `Authorization: <token>`
@@ -54,7 +54,7 @@ Retrieve all friend requests for the authenticated user.
 
 Retrieve all friend requests for the authenticated user.
 
-- **URL:** `http://localhost:8080/users/friendrequests`
+- **URL:** `http://localhost:8080/users/friendRequests`
 - **Method:** `POST`
 - **Headers:**
     - `Authorization: <token>`
@@ -113,7 +113,7 @@ Retrieve all friend requests for the authenticated user.
 
 Retrieve all friend requests for the authenticated user.
 
-- **URL:** `http://localhost:8080/users/friendrequests/1`
+- **URL:** `http://localhost:8080/users/friendRequests/1`
 - **Method:** `PUT`
 - **Headers:**
     - `Authorization: <token>`

@@ -217,7 +217,7 @@ public class UserControllerTest {
         when(friendRequestService.getFriendRequestsByTargetId(userId)).thenReturn(List.of(request));
 
         // Act & Assert
-        MockHttpServletRequestBuilder getRequest = get("/users/friendrequests")
+        MockHttpServletRequestBuilder getRequest = get("/users/friendRequests")
                 .header("Authorization", token)
                 .contentType(MediaType.APPLICATION_JSON);
 
@@ -231,7 +231,7 @@ public class UserControllerTest {
     void getFriendRequests_missingToken_unauthorized() throws Exception {
         Long userId = 1L;
 
-        MockHttpServletRequestBuilder getRequest = get("/users/friendrequests")
+        MockHttpServletRequestBuilder getRequest = get("/users/friendRequests")
                 .contentType(MediaType.APPLICATION_JSON)
                 .header("Authorization", "");
 
@@ -265,7 +265,7 @@ public class UserControllerTest {
         given(userService.getUserById(2L)).willReturn(Optional.of(target));
         given(friendRequestService.createFriendRequest(sender, target, "Hi there!")).willReturn(friendRequest);
 
-        MockHttpServletRequestBuilder postRequest = post("/users/friendrequests")
+        MockHttpServletRequestBuilder postRequest = post("/users/friendRequests")
                 .header("Authorization", "validToken")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(asJsonString(requestDTO));
@@ -288,7 +288,7 @@ public class UserControllerTest {
         given(friendRequestService.createFriendRequest(Mockito.any(), Mockito.any(), Mockito.any()))
                 .willThrow(new AssertionError("CreateFriendRequest was called even when it should not have been called!"));
 
-        MockHttpServletRequestBuilder postRequest = post("/users/friendrequests")
+        MockHttpServletRequestBuilder postRequest = post("/users/friendRequests")
                 .header("Authorization", "")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(asJsonString(requestDTO));
@@ -311,7 +311,7 @@ public class UserControllerTest {
         given(friendRequestService.createFriendRequest(Mockito.any(), Mockito.any(), Mockito.any()))
                 .willThrow(new AssertionError("CreateFriendRequest was called even when it should not have been called!"));
 
-        MockHttpServletRequestBuilder postRequest = post("/users/friendrequests")
+        MockHttpServletRequestBuilder postRequest = post("/users/friendRequests")
                 .header("Authorization", "validToken")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(asJsonString(requestDTO));
@@ -336,7 +336,7 @@ public class UserControllerTest {
         given(friendRequestService.createFriendRequest(Mockito.any(), Mockito.any(), Mockito.any()))
                 .willThrow(new AssertionError("CreateFriendRequest was called even when it should not have been called!"));
 
-        MockHttpServletRequestBuilder postRequest = post("/users/friendrequests")
+        MockHttpServletRequestBuilder postRequest = post("/users/friendRequests")
                 .header("Authorization", "validToken")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(asJsonString(requestDTO));
@@ -365,7 +365,7 @@ public class UserControllerTest {
         given(friendRequestService.createFriendRequest(sender, target, "Hello!"))
                 .willThrow(new EntityExistsException("Friend request already exists"));
 
-        MockHttpServletRequestBuilder postRequest = post("/users/friendrequests")
+        MockHttpServletRequestBuilder postRequest = post("/users/friendRequests")
                 .header("Authorization", "validToken")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(asJsonString(requestDTO));
@@ -390,7 +390,7 @@ public class UserControllerTest {
         given(friendRequestService.createFriendRequest(Mockito.any(), Mockito.any(), Mockito.any()))
                 .willThrow(new AssertionError("CreateFriendRequest was called even when it should not have been called!"));
 
-        MockHttpServletRequestBuilder postRequest = post("/users/friendrequests")
+        MockHttpServletRequestBuilder postRequest = post("/users/friendRequests")
                 .header("Authorization", "invalidToken")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(asJsonString(requestDTO));
@@ -426,7 +426,7 @@ public class UserControllerTest {
         given(userService.getUserByToken(token)).willReturn(Optional.of(user));
         given(friendRequestService.updateFriendRequest(friendRequest, InvitationStatus.ACCEPTED)).willReturn(friendRequest);
 
-        MockHttpServletRequestBuilder putRequest = put("/users/friendrequests/{friendRequestId}", requestId)
+        MockHttpServletRequestBuilder putRequest = put("/users/friendRequests/{friendRequestId}", requestId)
                 .header("Authorization", token)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(asJsonString(updateDTO));
@@ -446,7 +446,7 @@ public class UserControllerTest {
         given(friendRequestService.updateFriendRequest(Mockito.any(), Mockito.any()))
                 .willThrow(new AssertionError("Update friend request was called but it should not have been called!"));
 
-        MockHttpServletRequestBuilder putRequest = put("/users/friendrequests/1")
+        MockHttpServletRequestBuilder putRequest = put("/users/friendRequests/1")
                 .header("Authorization", "invalidToken")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(asJsonString(updateDTO));
@@ -477,7 +477,7 @@ public class UserControllerTest {
         given(friendRequestService.updateFriendRequest(Mockito.any(), Mockito.any()))
                 .willThrow(new AssertionError("Update friend request was called but it should not have been called!"));
 
-        MockHttpServletRequestBuilder putRequest = put("/users/friendrequests/1")
+        MockHttpServletRequestBuilder putRequest = put("/users/friendRequests/1")
                 .header("Authorization", "attackerToken")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(asJsonString(updateDTO));
@@ -499,7 +499,7 @@ public class UserControllerTest {
         FriendRequestPutDTO updateDTO = new FriendRequestPutDTO();
         updateDTO.setStatus(InvitationStatus.PENDING);
 
-        MockHttpServletRequestBuilder putRequest = put("/users/friendrequests/42")
+        MockHttpServletRequestBuilder putRequest = put("/users/friendRequests/42")
                 .header("Authorization", "anyToken")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(asJsonString(updateDTO));

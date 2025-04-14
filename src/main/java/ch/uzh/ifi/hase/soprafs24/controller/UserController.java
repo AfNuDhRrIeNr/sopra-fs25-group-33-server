@@ -86,7 +86,7 @@ public class UserController {
 
   // ------------------------------------------ FRIEND REQUESTS -------------------------------------------
 
-    @GetMapping("/users/friendrequests")
+    @GetMapping("/users/friendRequests")
     @ResponseStatus(HttpStatus.OK)
     @ResponseBody
     public List<FriendRequestGetDTO> getFriendRequests(@RequestHeader("Authorization") String token) {
@@ -108,7 +108,7 @@ public class UserController {
     }
 
 
-    @PostMapping("/users/friendrequests")
+    @PostMapping("/users/friendRequests")
     @ResponseStatus(HttpStatus.CREATED)
     @ResponseBody
     public FriendRequestGetDTO createFriendRequest(@RequestHeader("Authorization") String token, @RequestBody FriendRequestPostDTO friendRequestPostDTO) {
@@ -149,7 +149,7 @@ public class UserController {
     }
 
 
-    @PutMapping("/users/friendrequests/{friendRequestId}")
+    @PutMapping("/users/friendRequests/{friendRequestId}")
     @ResponseStatus(HttpStatus.OK)
     @ResponseBody
     public FriendRequestGetDTO updateFriendRequest(@PathVariable Long friendRequestId, @RequestHeader("Authorization") String token, @RequestBody FriendRequestPutDTO friendRequestPutDTO) {
