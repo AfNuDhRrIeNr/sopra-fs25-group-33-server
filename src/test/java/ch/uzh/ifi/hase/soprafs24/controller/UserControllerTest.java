@@ -17,12 +17,14 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -183,4 +185,70 @@ public class UserControllerTest {
     mockMvc.perform(postRequest)
         .andExpect(status().isUnauthorized()); // 401 Unauthorized
   }
+
+    @Test
+    public void testGetAllUsers_WithUserIdFilter() throws Exception {
+        // Assign
+        User user = new User();
+        user.setId(1L);
+        user.setUsername("testUser");
+        user.setHighScore(50);
+
+        User user2 = new User();
+        user2.setId(2L);
+        user2.setUsername("anotherUser");
+        user2.setHighScore(100);
+
+        when(userService.getUsers()).thenReturn(List.of(user, user2));
+
+        // Act & Assert
+        mockMvc.perform(get("/users")
+                        .param("userId", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].username", is("testUser")));
+    }
+
+    @Test
+    public void testGetAllUsers_WithLeaderboardSorting() throws Exception {
+        // Assign
+        User user1 = new User();
+        user1.setId(1L);
+        user1.setUsername("Alice");
+        user1.setHighScore(100);
+
+        User user2 = new User();
+        user2.setId(2L);
+        user2.setUsername("Bob");
+        user2.setHighScore(200);
+
+        when(userService.getUsers()).thenReturn(Arrays.asList(user1, user2));
+
+        // Act & Assert
+        mockMvc.perform(get("/users")
+                        .param("leaderboard", "true"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(2)))
+                .andExpect(jsonPath("$[0].username", is("Bob")))  // sorted descending
+                .andExpect(jsonPath("$[1].username", is("Alice")));
+    }
+
+    @Test
+    public void testGetAllUsers_WithoutParams_ReturnsAll() throws Exception {
+        // Assign
+        User user1 = new User();
+        user1.setId(1L);
+        user1.setUsername("Alice");
+
+        User user2 = new User();
+        user2.setId(2L);
+        user2.setUsername("Bob");
+
+        when(userService.getUsers()).thenReturn(List.of(user1, user2));
+
+        // Act & Assert
+        mockMvc.perform(get("/users"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(2)));
+    }
 }
