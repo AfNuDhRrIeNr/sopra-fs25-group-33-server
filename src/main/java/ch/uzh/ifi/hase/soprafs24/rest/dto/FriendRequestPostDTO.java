@@ -1,15 +1,15 @@
 package ch.uzh.ifi.hase.soprafs24.rest.dto;
 
 public class FriendRequestPostDTO {
-    private Long targetId;
+    private String targetUsername;
     private String message;
 
-    public Long getTargetId() {
-        return targetId;
+    public String getTargetUsername() {
+        return targetUsername;
     }
 
-    public void setTargetId(Long targetId) {
-        this.targetId = targetId;
+    public void setTargetUsername(String targetUsername) {
+        this.targetUsername = targetUsername;
     }
 
     public String getMessage() {

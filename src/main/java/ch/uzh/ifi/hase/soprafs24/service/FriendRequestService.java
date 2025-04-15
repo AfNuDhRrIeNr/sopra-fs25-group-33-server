@@ -82,6 +82,14 @@ public class FriendRequestService {
             throw new IllegalArgumentException("Cannot change status from " + friendRequest.getStatus().toString() + " to PENDING");
 
         friendRequest.setStatus(status);
+
+        if(status == InvitationStatus.ACCEPTED) {
+            // Add the target to the sender's friend list
+            User sender = friendRequest.getSender();
+            User target = friendRequest.getTarget();
+            userService.checkAndAddFriend(sender, target);
+        }
+
         return friendRequestRepository.saveAndFlush(friendRequest);
     }
 }

@@ -118,10 +118,10 @@ public class UserController {
         Optional<User> optionalSender = userService.getUserByToken(token);
         if (optionalSender.isEmpty())
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token: User not found");
-        if (friendRequestPostDTO.getTargetId() == null)
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Target user ID is missing");
-        Optional<User> optionalTarget = userService.getUserById(friendRequestPostDTO.getTargetId());
-        if (optionalTarget.isEmpty()) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Target user not found");
+        if (friendRequestPostDTO.getTargetUsername() == null)
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Target username is missing");
+        User target = userService.getUserByUsername(friendRequestPostDTO.getTargetUsername());
+        if (target == null) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Target user not found");
 
         // Add default message if left empty
         if (friendRequestPostDTO.getMessage() == null) friendRequestPostDTO.setMessage("");
@@ -129,7 +129,7 @@ public class UserController {
         // Create friend request
         FriendRequest friendRequest;
         try {
-            friendRequest = friendRequestService.createFriendRequest(optionalSender.get(), optionalTarget.get(), friendRequestPostDTO.getMessage());
+            friendRequest = friendRequestService.createFriendRequest(optionalSender.get(), target, friendRequestPostDTO.getMessage());
         }
         catch (UserNotFoundException e) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());

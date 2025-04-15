@@ -2,8 +2,6 @@ package ch.uzh.ifi.hase.soprafs24.rest.dto;
 
 import ch.uzh.ifi.hase.soprafs24.constant.UserStatus;
 
-import java.util.Set;
-
 public class UserGetDTO {
 
   private Long id;
@@ -14,7 +12,7 @@ public class UserGetDTO {
 
   private GameGetDTO bestGamePlayed;
 
-  private Set<UserGetDTO> friends;
+  private String[] friends;
 
   public boolean isInGame() {
       return isInGame;
@@ -32,11 +30,11 @@ public class UserGetDTO {
         this.bestGamePlayed = bestGamePlayed;
     }
 
-    public Set<UserGetDTO> getFriends() {
+    public String[] getFriends() {
         return friends;
     }
 
-    public void setFriends(Set<UserGetDTO> friends) {
+    public void setFriends(String[] friends) {
         this.friends = friends;
     }
 

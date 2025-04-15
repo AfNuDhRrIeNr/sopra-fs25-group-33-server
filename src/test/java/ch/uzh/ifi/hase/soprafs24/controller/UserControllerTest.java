@@ -250,6 +250,7 @@ public class UserControllerTest {
 
         User target = new User();
         target.setId(2L);
+        target.setUsername("fasdfasd");
 
         FriendRequest friendRequest = new FriendRequest();
         friendRequest.setId(10L);
@@ -258,11 +259,11 @@ public class UserControllerTest {
         friendRequest.setMessage("Hi there!");
 
         FriendRequestPostDTO requestDTO = new FriendRequestPostDTO();
-        requestDTO.setTargetId(target.getId());
+        requestDTO.setTargetUsername(target.getUsername());
         requestDTO.setMessage("Hi there!");
 
         given(userService.getUserByToken("validToken")).willReturn(Optional.of(sender));
-        given(userService.getUserById(2L)).willReturn(Optional.of(target));
+        given(userService.getUserByUsername(target.getUsername())).willReturn(target);
         given(friendRequestService.createFriendRequest(sender, target, "Hi there!")).willReturn(friendRequest);
 
         MockHttpServletRequestBuilder postRequest = post("/users/friendRequests")
@@ -276,13 +277,14 @@ public class UserControllerTest {
                 .andExpect(jsonPath("$.id", is(friendRequest.getId().intValue())))
                 .andExpect(jsonPath("$.sender.id", is(sender.getId().intValue())))
                 .andExpect(jsonPath("$.target.id", is(target.getId().intValue())))
-                .andExpect(jsonPath("$.message", is("Hi there!")));
+                .andExpect(jsonPath("$.message", is("Hi there!")))
+                .andExpect(jsonPath("$.target.username", is(target.getUsername())));
     }
 
     @Test
     void createFriendRequest_missingToken_returnsUnauthorized() throws Exception {
         FriendRequestPostDTO requestDTO = new FriendRequestPostDTO();
-        requestDTO.setTargetId(2L);
+        requestDTO.setTargetUsername("testUser");
         requestDTO.setMessage("Hello!");
 
         given(friendRequestService.createFriendRequest(Mockito.any(), Mockito.any(), Mockito.any()))
@@ -318,7 +320,7 @@ public class UserControllerTest {
 
         mockMvc.perform(postRequest)
                 .andExpect(status().isBadRequest())
-                .andExpect(status().reason("Target user ID is missing"));
+                .andExpect(status().reason("Target username is missing"));
     }
 
     @Test
@@ -328,11 +330,11 @@ public class UserControllerTest {
         sender.setToken("validToken");
 
         FriendRequestPostDTO requestDTO = new FriendRequestPostDTO();
-        requestDTO.setTargetId(99L);
+        requestDTO.setTargetUsername("nonExistentUser");
         requestDTO.setMessage("Hello");
 
         given(userService.getUserByToken("validToken")).willReturn(Optional.of(sender));
-        given(userService.getUserById(99L)).willReturn(Optional.empty());
+        given(userService.getUserByUsername("nonExistentUser")).willReturn(null);
         given(friendRequestService.createFriendRequest(Mockito.any(), Mockito.any(), Mockito.any()))
                 .willThrow(new AssertionError("CreateFriendRequest was called even when it should not have been called!"));
 
@@ -355,13 +357,14 @@ public class UserControllerTest {
 
         User target = new User();
         target.setId(2L);
+        target.setUsername("testUser");
 
         FriendRequestPostDTO requestDTO = new FriendRequestPostDTO();
-        requestDTO.setTargetId(target.getId());
+        requestDTO.setTargetUsername("testUser");
         requestDTO.setMessage("Hello!");
 
         given(userService.getUserByToken("validToken")).willReturn(Optional.of(sender));
-        given(userService.getUserById(target.getId())).willReturn(Optional.of(target));
+        given(userService.getUserByUsername(target.getUsername())).willReturn(target);
         given(friendRequestService.createFriendRequest(sender, target, "Hello!"))
                 .willThrow(new EntityExistsException("Friend request already exists"));
 
@@ -381,9 +384,10 @@ public class UserControllerTest {
         // Assign
         User target = new User();
         target.setId(2L);
+        target.setUsername("afsdadsfa");
 
         FriendRequestPostDTO requestDTO = new FriendRequestPostDTO();
-        requestDTO.setTargetId(target.getId());
+        requestDTO.setTargetUsername(target.getUsername());
         requestDTO.setMessage("Hello!");
 
         given(userService.getUserByToken("invalidToken")).willReturn(Optional.empty());

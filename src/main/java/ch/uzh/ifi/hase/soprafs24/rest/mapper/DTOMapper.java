@@ -12,6 +12,7 @@ import org.mapstruct.MappingTarget;
 import org.mapstruct.factory.Mappers;
 
 import java.util.LinkedList;
+import java.util.Set;
 
 /**
  * DTOMapper
@@ -39,7 +40,7 @@ public interface DTOMapper {
   @Mapping(source = "token", target = "token")
   @Mapping(source = "inGame", target = "inGame")
   @Mapping(source = "bestGamePlayed", target = "bestGamePlayed", qualifiedByName = "convertEntityToGameGetDTO")
-  @Mapping(source = "friends", target = "friends", qualifiedByName = "convertEntityToUserGetDTO")
+  @Mapping(source = "friends", target = "friends", qualifiedByName = "convertFriendsToUserGetDTO")
   UserGetDTO convertEntityToUserGetDTO(User user);
 
 
@@ -72,4 +73,10 @@ public interface DTOMapper {
     @Mapping(source = "timeStamp", target = "timeStamp")
     @Mapping(source = "message", target = "message")
     FriendRequestGetDTO convertEntityToFriendRequestGetDTO(FriendRequest friendRequest);
+
+    default String[] convertFriendsToUserGetDTOWithoutFriends(Set<User> friends) {
+           return friends.stream()
+                .map(User::getUsername)
+                .toArray(String[]::new);
+    }
 }
