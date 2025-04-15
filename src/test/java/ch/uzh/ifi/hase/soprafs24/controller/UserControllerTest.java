@@ -24,6 +24,8 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 import org.springframework.web.server.ResponseStatusException;
 
 import javax.persistence.EntityExistsException;
+
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -195,6 +197,71 @@ public class UserControllerTest {
         .andExpect(status().isUnauthorized()); // 401 Unauthorized
   }
 
+    @Test
+    public void testGetAllUsers_WithUserIdFilter() throws Exception {
+        // Assign
+        User user = new User();
+        user.setId(1L);
+        user.setUsername("testUser");
+        user.setHighScore(50);
+
+        User user2 = new User();
+        user2.setId(2L);
+        user2.setUsername("anotherUser");
+        user2.setHighScore(100);
+
+        when(userService.getUsers()).thenReturn(List.of(user, user2));
+
+        // Act & Assert
+        mockMvc.perform(get("/users")
+                        .param("userId", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].username", is("testUser")));
+    }
+
+    @Test
+    public void testGetAllUsers_WithLeaderboardSorting() throws Exception {
+        // Assign
+        User user1 = new User();
+        user1.setId(1L);
+        user1.setUsername("Alice");
+        user1.setHighScore(100);
+
+        User user2 = new User();
+        user2.setId(2L);
+        user2.setUsername("Bob");
+        user2.setHighScore(200);
+
+        when(userService.getUsers()).thenReturn(Arrays.asList(user1, user2));
+
+        // Act & Assert
+        mockMvc.perform(get("/users")
+                        .param("leaderboard", "true"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(2)))
+                .andExpect(jsonPath("$[0].username", is("Bob")))  // sorted descending
+                .andExpect(jsonPath("$[1].username", is("Alice")));
+    }
+
+    @Test
+    public void testGetAllUsers_WithoutParams_ReturnsAll() throws Exception {
+        // Assign
+        User user1 = new User();
+        user1.setId(1L);
+        user1.setUsername("Alice");
+
+        User user2 = new User();
+        user2.setId(2L);
+        user2.setUsername("Bob");
+
+        when(userService.getUsers()).thenReturn(List.of(user1, user2));
+
+        // Act & Assert
+        mockMvc.perform(get("/users"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(2)));
+    }
 
   // --------------------------------------------- FriendRequests ---------------------------------------------
 

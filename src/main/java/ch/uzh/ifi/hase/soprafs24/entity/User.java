@@ -53,8 +53,8 @@ public class User implements Serializable {
   @OneToMany(mappedBy = "sender")
   private Set<GameInvitation> receivedGameInvitations = new HashSet<>();
 
-  @OneToOne
-  private Game bestGamePlayed;
+  @Column(nullable = false)
+  private int highScore = 0;
 
   @Column(nullable = false)
   private LocalDateTime lastModified = LocalDateTime.now();
@@ -136,14 +136,6 @@ public class User implements Serializable {
         this.receivedFriendRequests.add(request);
     }
 
-    public Game getBestGamePlayed() {
-        return bestGamePlayed;
-    }
-
-    public void setBestGamePlayed(Game bestGamePlayed) {
-        this.bestGamePlayed = bestGamePlayed;
-    }
-
     public LocalDateTime getLastModified() {
         return lastModified;
     }
@@ -157,5 +149,13 @@ public class User implements Serializable {
 
     public void addGameInvitation(GameInvitation gameInvitation) {
       this.receivedGameInvitations.add(gameInvitation);
+    }
+
+    public int getHighScore() {
+        return highScore;
+    }
+
+    public void setHighScore(int highScore) {
+        this.highScore = highScore;
     }
 }

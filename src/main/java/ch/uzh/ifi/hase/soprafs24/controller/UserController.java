@@ -14,6 +14,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import javax.persistence.EntityExistsException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
@@ -39,15 +40,17 @@ public class UserController {
   @GetMapping("/users")
   @ResponseStatus(HttpStatus.OK)
   @ResponseBody
-  public List<UserGetDTO> getAllUsers() {
+  public List<UserGetDTO> getAllUsers(@RequestParam(required = false) Long userId, @RequestParam(value="leaderboard", required = false) boolean orderByBestGame) {
     // fetch all users in the internal representation
     List<User> users = userService.getUsers();
     List<UserGetDTO> userGetDTOs = new ArrayList<>();
 
     // convert each user to the API representation
     for (User user : users) {
+      if(userId != null && user.getId() != userId) continue;
       userGetDTOs.add(DTOMapper.INSTANCE.convertEntityToUserGetDTO(user));
     }
+    if(orderByBestGame) userGetDTOs.sort(Comparator.comparingInt(UserGetDTO::getHighScore).reversed());
     return userGetDTOs;
   }
 
