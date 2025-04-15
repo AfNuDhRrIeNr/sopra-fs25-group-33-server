@@ -12,7 +12,7 @@ public class UserGetDTO {
   private String token;
   private boolean isInGame;
 
-  private GameGetDTO bestGamePlayed;
+  private int highScore;
 
   private Set<UserGetDTO> friends;
 
@@ -24,13 +24,8 @@ public class UserGetDTO {
         isInGame = inGame;
   }
 
-  public GameGetDTO getBestGamePlayed() {
-        return bestGamePlayed;
-    }
-
-  public void setBestGamePlayed(GameGetDTO bestGamePlayed) {
-        this.bestGamePlayed = bestGamePlayed;
-    }
+  public int getHighScore() { return highScore; }
+    public void setHighScore(int highScore) { this.highScore = highScore; }
 
     public Set<UserGetDTO> getFriends() {
         return friends;

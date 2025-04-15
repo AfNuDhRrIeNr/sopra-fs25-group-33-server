@@ -37,7 +37,7 @@ public interface DTOMapper {
   @Mapping(source = "status", target = "status")
   @Mapping(source = "token", target = "token")
   @Mapping(source = "inGame", target = "inGame")
-  @Mapping(source = "bestGamePlayed", target = "bestGamePlayed", qualifiedByName = "convertEntityToGameGetDTO")
+  @Mapping(source = "highScore", target = "highScore")
   @Mapping(source = "friends", target = "friends", qualifiedByName = "convertEntityToUserGetDTO")
   UserGetDTO convertEntityToUserGetDTO(User user);
 

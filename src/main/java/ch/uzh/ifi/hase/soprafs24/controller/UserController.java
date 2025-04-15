@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -31,7 +32,7 @@ public class UserController {
   @GetMapping("/users")
   @ResponseStatus(HttpStatus.OK)
   @ResponseBody
-  public List<UserGetDTO> getAllUsers(@RequestParam(value="user",required = false) Long userId, @RequestParam(value="leaderboard", required = false) boolean orderByBestGame) {
+  public List<UserGetDTO> getAllUsers(@RequestParam(required = false) Long userId, @RequestParam(value="leaderboard", required = false) boolean orderByBestGame) {
     // fetch all users in the internal representation
     List<User> users = userService.getUsers();
     List<UserGetDTO> userGetDTOs = new ArrayList<>();
@@ -41,8 +42,8 @@ public class UserController {
       if(userId != null && user.getId() != userId) continue;
       userGetDTOs.add(DTOMapper.INSTANCE.convertEntityToUserGetDTO(user));
     }
+    if(orderByBestGame) userGetDTOs.sort(Comparator.comparingInt(UserGetDTO::getHighScore).reversed());
     return userGetDTOs;
-    //return orderByBestGame ? userGetDTOs.sort((u1, u2) -> u1.highScore < u2.highScore)): userGetDTOs;
   }
 
   @PostMapping("/users/register")
