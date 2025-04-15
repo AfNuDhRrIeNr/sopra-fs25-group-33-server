@@ -261,6 +261,7 @@ public class UserControllerTest {
         mockMvc.perform(get("/users"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(2)));
+    }
 
   // --------------------------------------------- FriendRequests ---------------------------------------------
 
