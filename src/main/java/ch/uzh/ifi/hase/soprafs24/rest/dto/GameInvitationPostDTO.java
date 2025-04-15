@@ -2,7 +2,8 @@ package ch.uzh.ifi.hase.soprafs24.rest.dto;
 
 public class GameInvitationPostDTO {
     private Long gameId;
-    private Long targetId;
+
+    private String targetUsername;
 
     public Long getGameId() {
         return gameId;
@@ -12,11 +13,7 @@ public class GameInvitationPostDTO {
         this.gameId = gameId;
     }
 
-    public Long getTargetId() {
-        return targetId;
-    }
+    public String getTargetUsername() { return targetUsername; }
 
-    public void setTargetId(Long targetId) {
-        this.targetId = targetId;
-    }
+    public void setTargetUsername(String targetUsername) { this.targetUsername = targetUsername; }
 }

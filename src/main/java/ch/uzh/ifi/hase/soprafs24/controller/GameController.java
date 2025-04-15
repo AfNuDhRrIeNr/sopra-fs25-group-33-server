@@ -95,16 +95,16 @@ public class GameController {
         Optional<User> senderUser = userService.getUserByToken(token);
         if (senderUser.isEmpty()) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token: User not found");
 
-        Optional<User> targetUser = userService.getUserById(gameInvitationPostDTO.getTargetId());
-        if (targetUser.isEmpty()) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Target user not found");
+        User targetUser = userService.getUserByUsername(gameInvitationPostDTO.getTargetUsername());
+        if (targetUser == null) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Target user not found");
 
-        if(senderUser.get().getId().equals(targetUser.get().getId())) throw new ResponseStatusException(HttpStatus.CONFLICT, "Cannot send game invitation to yourself!");
+        if(senderUser.get().getId().equals(targetUser.getId())) throw new ResponseStatusException(HttpStatus.CONFLICT, "Cannot send game invitation to yourself!");
 
         Optional<Game> game = gameService.getGameById(gameInvitationPostDTO.getGameId());
 
         GameInvitation gameInvitation = null;
         try {
-            gameInvitation = gameInvitationService.createGameInvitation(game,senderUser,targetUser);
+            gameInvitation = gameInvitationService.createGameInvitation(game,senderUser,Optional.of(targetUser));
         }
         catch (GameNotFoundException | UserNotFoundException e) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());

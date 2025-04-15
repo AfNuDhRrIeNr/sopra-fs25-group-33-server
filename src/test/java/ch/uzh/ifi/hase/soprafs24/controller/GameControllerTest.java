@@ -191,16 +191,16 @@ public class GameControllerTest {
     @Test
     void createGameInvitation_validRequest_returnsCreated() throws Exception {
         User sender = new User(); sender.setId(1L);
-        User target = new User(); target.setId(2L);
+        User target = new User(); target.setId(2L); target.setUsername("fasdfasdfa");
         Game game = new Game(); game.setId(1L);
         GameInvitation invitation = new GameInvitation();
         invitation.setId(1L); invitation.setSender(sender); invitation.setTarget(target); invitation.setGame(game); invitation.setStatus(InvitationStatus.PENDING);
 
         GameInvitationPostDTO dto = new GameInvitationPostDTO();
-        dto.setTargetId(2L); dto.setGameId(1L);
+        dto.setTargetUsername(target.getUsername()); dto.setGameId(1L);
 
         Mockito.when(userService.getUserByToken("token")).thenReturn(Optional.of(sender));
-        Mockito.when(userService.getUserById(2L)).thenReturn(Optional.of(target));
+        Mockito.when(userService.getUserByUsername(target.getUsername())).thenReturn(target);
         Mockito.when(gameService.getGameById(1L)).thenReturn(Optional.of(game));
         Mockito.when(gameInvitationService.createGameInvitation(any(), any(), any())).thenReturn(invitation);
 
@@ -225,12 +225,13 @@ public class GameControllerTest {
 
     @Test
     void createGameInvitation_inviteSelf_returnsConflict() throws Exception {
-        User sender = new User(); sender.setId(1L);
+        User sender = new User(); sender.setId(1L); sender.setUsername("fdasfasdfa");
         GameInvitationPostDTO dto = new GameInvitationPostDTO();
-        dto.setTargetId(1L); dto.setGameId(1L);
+        dto.setTargetUsername(sender.getUsername()); dto.setGameId(1L);
 
         Mockito.when(userService.getUserByToken("token")).thenReturn(Optional.of(sender));
         Mockito.when(userService.getUserById(1L)).thenReturn(Optional.of(sender));
+        Mockito.when(userService.getUserByUsername(sender.getUsername())).thenReturn(sender);
 
         mockMvc.perform(post("/games/invitations")
                         .header("Authorization", "token")
