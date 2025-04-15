@@ -76,7 +76,7 @@ public class MoveValidatorService {
     /**
      * Checks if a word exists in the dictionary
      */
-    private boolean isValidWord(String word) {
+    public boolean isValidWord(String word) {
 
         String url = API_URL + word.toLowerCase();
         
@@ -96,7 +96,7 @@ public class MoveValidatorService {
     }
 
     // "Main" method to find words formed by new tiles
-    private List<String> findWords(String[][] oldBoard, String[][] newBoard) {
+    public List<String> findWords(String[][] oldBoard, String[][] newBoard) {
         // Find new tile positions
         List<int[]> newPositions = new ArrayList<>();
         
@@ -138,15 +138,15 @@ public class MoveValidatorService {
         return words;
     }
     
-    private boolean isHorizontal(List<int[]> positions) {
+    public boolean isHorizontal(List<int[]> positions) {
         return positions.stream().allMatch(pos -> pos[0] == positions.get(0)[0]);
     }
 
-    private boolean isVertical(List<int[]> positions) {
+    public boolean isVertical(List<int[]> positions) {
         return positions.stream().allMatch(pos -> pos[1] == positions.get(0)[1]);
     }
     
-    private void validatePlacement(String[][] board, List<int[]> positions, String[][] newBoard) {
+    public void validatePlacement(String[][] board, List<int[]> positions, String[][] newBoard) {
         boolean isHorz = isHorizontal(positions);
         boolean isVert = isVertical(positions);
         
@@ -217,7 +217,7 @@ public class MoveValidatorService {
         }
     }
     
-    private String findWordAt(String[][] board, int x, int y, boolean horizontal) {
+    public String findWordAt(String[][] board, int x, int y, boolean horizontal) {
         StringBuilder word = new StringBuilder();
         
         // Find start of word
