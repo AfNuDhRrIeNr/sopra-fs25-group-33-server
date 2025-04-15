@@ -107,7 +107,7 @@ public class WebSocketController {
             gameState.setUserTiles(newTiles);
             logger.info("[LOG] Move submitted for gameId: '{}', userTiles: '{}'", gameId, gameState.getUserTiles());
             simpleMessagingTemplate.convertAndSend(
-                    "/topic/game_states/" + gameId,
+                    "/topic/game_states/users/" + gameState.getPlayerId(),
                     new MessageGameStateMessageDTO(
                             Long.valueOf(gameId),
                             MessageStatus.SUCCESS,
