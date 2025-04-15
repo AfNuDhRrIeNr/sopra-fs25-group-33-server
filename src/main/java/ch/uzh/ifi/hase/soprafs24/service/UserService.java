@@ -2,7 +2,6 @@ package ch.uzh.ifi.hase.soprafs24.service;
 
 import ch.uzh.ifi.hase.soprafs24.constant.UserStatus;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
-import ch.uzh.ifi.hase.soprafs24.enums.InvitationStatus;
 import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,9 +11,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
-import java.util.Optional;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -85,6 +84,8 @@ public class UserService {
     public Optional<User> getUserById(Long id) {
         return userRepository.findById(id);
     }
+
+    public User getUserByUsername(String username) { return userRepository.findByUsername(username); }
   public User authenticateUser(User userInput) {
     // Find user by username
     User user = userRepository.findByUsername(userInput.getUsername());
@@ -106,5 +107,18 @@ public class UserService {
     public User updateUserStatus(User user, UserStatus userStatus) {
       user.setStatus(userStatus);
       return userRepository.saveAndFlush(user);
+    }
+
+    public void checkAndAddFriend(User sender, User target) {
+      if(sender == null || target == null) throw new IllegalArgumentException("Sender and target cannot be null");
+      if(sender == target) throw new IllegalArgumentException("Cannot add yourself as a friend");
+      if(!sender.getFriends().contains(target)) {
+          sender.addFriend(target);
+          userRepository.saveAndFlush(sender);
+      }
+      if(!target.getFriends().contains(sender)) {
+          target.addFriend(sender);
+          userRepository.saveAndFlush(target);
+      }
     }
 }

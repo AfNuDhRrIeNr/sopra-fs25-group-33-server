@@ -1,5 +1,6 @@
 package ch.uzh.ifi.hase.soprafs24.rest.mapper;
 
+import ch.uzh.ifi.hase.soprafs24.entity.FriendRequest;
 import ch.uzh.ifi.hase.soprafs24.entity.Game;
 import ch.uzh.ifi.hase.soprafs24.entity.GameInvitation;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
@@ -11,6 +12,7 @@ import org.mapstruct.MappingTarget;
 import org.mapstruct.factory.Mappers;
 
 import java.util.LinkedList;
+import java.util.Set;
 
 /**
  * DTOMapper
@@ -38,7 +40,7 @@ public interface DTOMapper {
   @Mapping(source = "token", target = "token")
   @Mapping(source = "inGame", target = "inGame")
   @Mapping(source = "bestGamePlayed", target = "bestGamePlayed", qualifiedByName = "convertEntityToGameGetDTO")
-  @Mapping(source = "friends", target = "friends", qualifiedByName = "convertEntityToUserGetDTO")
+  @Mapping(source = "friends", target = "friends", qualifiedByName = "convertFriendsToUserGetDTO")
   UserGetDTO convertEntityToUserGetDTO(User user);
 
 
@@ -64,15 +66,17 @@ public interface DTOMapper {
     @Mapping(target = "status", source = "status")
     void updateGameInvitationFromPutDTO(GameInvitationPutDTO gameInvitationPutDTO, @MappingTarget GameInvitation gameInvitation);
 
-    // Note: We assume Game and Target are set manually in service layer using gameId and targetId from PostDTO.
-    // So no @Mapping is needed here, but this can act as a base converter if needed.
-    default GameInvitation convertGameInvitationPostDTOtoEntity(GameInvitationPostDTO postDTO, Game game, User sender, User target) {
-        GameInvitation invitation = new GameInvitation();
-        invitation.setGame(game);
-        invitation.setSender(sender);
-        invitation.setTarget(target);
-        invitation.setStatus(InvitationStatus.PENDING);
-        invitation.setTimeStamp(java.time.LocalDateTime.now());
-        return invitation;
+    @Mapping(source = "id", target = "id")
+    @Mapping(source = "sender", target = "sender", qualifiedByName = "convertEntityToUserGetDTO")
+    @Mapping(source = "target", target = "target", qualifiedByName = "convertEntityToUserGetDTO")
+    @Mapping(source = "status", target = "status")
+    @Mapping(source = "timeStamp", target = "timeStamp")
+    @Mapping(source = "message", target = "message")
+    FriendRequestGetDTO convertEntityToFriendRequestGetDTO(FriendRequest friendRequest);
+
+    default String[] convertFriendsToUserGetDTOWithoutFriends(Set<User> friends) {
+           return friends.stream()
+                .map(User::getUsername)
+                .toArray(String[]::new);
     }
 }
