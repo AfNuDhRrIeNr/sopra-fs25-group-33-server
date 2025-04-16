@@ -56,6 +56,32 @@ public class GameController {
         }
     }
 
+    @DeleteMapping("/games/{id}")
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseEntity<Void> deleteGame(@PathVariable Long id, @RequestHeader("Authorization") String token) {
+        Optional<User> user = userService.getUserByToken(token);
+        if (user.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        Optional<Game> game = gameService.getGameById(id);
+        if (game.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        if (!gameService.isUserInGame(game.get(), user.get())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        try {
+            gameService.deleteGame(id);
+            return ResponseEntity.ok().build();
+        } catch (GameNotFoundException exception) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, exception.getMessage());
+        } catch (Exception exception) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred:\n"+exception.getMessage());
+        }
+    }
 
     @GetMapping("/games/{id}")
     public ResponseEntity<GameGetDTO> getGameById(@PathVariable Long id) {

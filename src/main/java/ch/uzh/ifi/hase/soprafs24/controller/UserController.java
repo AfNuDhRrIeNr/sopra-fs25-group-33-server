@@ -11,6 +11,10 @@ import ch.uzh.ifi.hase.soprafs24.service.UserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.ResponseEntity;
+import ch.uzh.ifi.hase.soprafs24.constant.UserStatus;
+
+
 
 import javax.persistence.EntityExistsException;
 import java.util.ArrayList;
@@ -86,7 +90,19 @@ public class UserController {
       // Return authenticated user
       return DTOMapper.INSTANCE.convertEntityToUserGetDTO(authenticatedUser);
   }
+  
+    @PutMapping("/users/logout")
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseEntity<Void> logoutUser(@RequestHeader("Authorization") String token) {
+        // Verify user & token
+        if(token == null || token.isEmpty()) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Token is missing");
+        Optional<User> optionalUser = userService.getUserByToken(token);
+        if (optionalUser.isEmpty()) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token: User not authorized to access this resource");
 
+        User user = optionalUser.get();
+        userService.updateUserStatus(user, UserStatus.OFFLINE);
+        return ResponseEntity.ok().build();
+    }
   // ------------------------------------------ FRIEND REQUESTS -------------------------------------------
 
     @GetMapping("/users/friendRequests")

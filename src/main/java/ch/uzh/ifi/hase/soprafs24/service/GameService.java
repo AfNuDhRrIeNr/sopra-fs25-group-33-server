@@ -41,6 +41,11 @@ public class GameService {
         return gameRepository.save(game);
     }
 
+    public void deleteGame(Long id) throws GameNotFoundException {
+        if(id == null || gameRepository.findById(id).isEmpty()) throw new GameNotFoundException("Game not found");
+        gameRepository.deleteById(id);
+    }
+    
     public Optional<Game> getGameById(Long id) {
         return gameRepository.findById(id);
     }
