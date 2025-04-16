@@ -48,7 +48,8 @@ public class GameService {
     public Game joinGame(Game game, User user) throws GameNotFoundException, UserNotFoundException {
         if(game == null || game.getId() == null ||gameRepository.findById(game.getId()).isEmpty()) throw new GameNotFoundException("Game not found");
         if(user == null || user.getId() == null ||userRepository.findById(user.getId()).isEmpty()) throw new UserNotFoundException("User not found");
-        return gameRepository.save(game);
+        game.addUser(user);
+        return gameRepository.saveAndFlush(game);
     }
 
     public boolean isUserInGame(Game game, User user) {

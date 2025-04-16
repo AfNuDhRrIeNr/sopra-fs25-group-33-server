@@ -6,6 +6,8 @@ import javax.persistence.*;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -42,7 +44,7 @@ public class User implements Serializable {
 
     // Self-referencing many-to-many for friendship
   @ManyToMany
-  private Set<User> friends = new HashSet<>();
+  private List<User> friends = new LinkedList<>();
 
   @OneToMany(mappedBy = "sender")
   private Set<FriendRequest> sentFriendRequests = new HashSet<>();
@@ -108,11 +110,11 @@ public class User implements Serializable {
         isInGame = inGame;
     }
 
-    public Set<User> getFriends() {
+    public List<User> getFriends() {
         return friends;
     }
 
-    public void setFriends(Set<User> friends) {
+    public void setFriends(List<User> friends) {
         this.friends = friends;
     }
 
