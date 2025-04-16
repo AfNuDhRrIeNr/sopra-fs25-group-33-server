@@ -8,8 +8,32 @@ public class UserGetDTO {
   private String username;
   private UserStatus status;
   private String token;
+  private boolean isInGame;
 
-  public Long getId() {
+  private int highScore;
+
+  private String[] friends;
+
+  public boolean isInGame() {
+      return isInGame;
+    }
+
+  public void setInGame(boolean inGame) {
+        isInGame = inGame;
+  }
+
+  public int getHighScore() { return highScore; }
+    public void setHighScore(int highScore) { this.highScore = highScore; }
+
+    public String[] getFriends() {
+        return friends;
+    }
+
+    public void setFriends(String[] friends) {
+        this.friends = friends;
+    }
+
+    public Long getId() {
     return id;
   }
 
