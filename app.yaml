@@ -1,6 +1,7 @@
 # https://cloud.google.com/appengine/docs/the-appengine-environments#comparing_high-level_features
 # https://cloud.google.com/appengine/docs/standard
 
+env: flex
 runtime: java17
 instance_class: F2
 
