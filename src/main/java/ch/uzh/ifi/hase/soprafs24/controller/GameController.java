@@ -18,6 +18,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
+import ch.uzh.ifi.hase.soprafs24.constant.UserStatus;
+
 
 import java.util.ArrayList;
 import java.util.List;
@@ -115,7 +117,20 @@ public class GameController {
         return ResponseEntity.ok(DTOMapper.INSTANCE.convertEntityToGameGetDTO(game));
     }
 
-
+    @PutMapping("/users/leave/{id}")
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseEntity<Void> leaveUser(@PathVariable Long id, @RequestHeader("Authorization") String token) {
+        // Verify user & token
+        if(token == null || token.isEmpty()) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Token is missing");
+        Optional<User> optionalUser = userService.getUserByToken(token);
+        if (optionalUser.isEmpty()) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token: User not authorized to access this resource");
+        Game game = gameService.getGameById(id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found"));
+        User user = optionalUser.get();
+        userService.updateUserStatus(user, UserStatus.ONLINE);
+        gameService.leaveGame(game, user);
+        return ResponseEntity.ok().build();
+    }
 
     @ResponseStatus(HttpStatus.OK)
     @PutMapping("/games/{id}/assign")

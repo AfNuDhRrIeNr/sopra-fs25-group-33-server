@@ -103,6 +103,7 @@ public class UserController {
         userService.updateUserStatus(user, UserStatus.OFFLINE);
         return ResponseEntity.ok().build();
     }
+
   // ------------------------------------------ FRIEND REQUESTS -------------------------------------------
 
     @GetMapping("/users/friendRequests")

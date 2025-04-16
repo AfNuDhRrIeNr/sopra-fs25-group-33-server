@@ -57,6 +57,11 @@ public class GameService {
         return gameRepository.saveAndFlush(game);
     }
 
+    public Game leaveGame(Game game, User user) {
+        game.removeUser(user);
+        return gameRepository.saveAndFlush(game);
+    }
+
     public boolean isUserInGame(Game game, User user) {
         if(game == null || game.getId() == null ||gameRepository.findById(game.getId()).isEmpty()) return false;
         if(user == null || user.getId() == null ||userRepository.findById(user.getId()).isEmpty()) return false;
