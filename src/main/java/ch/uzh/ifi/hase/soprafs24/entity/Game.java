@@ -20,6 +20,9 @@ public class Game implements Serializable {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @OneToMany(mappedBy = "game", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    private List<GameInvitation> gameInvitations;
+    
     @ManyToMany
     @JoinTable(name = "game_user",
             joinColumns = @JoinColumn(name = "game_id"),
