@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
+import java.util.Map;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -19,6 +20,7 @@ public class GameStateDTO {
     private String[][] board;
     private String action;
     private Long playerId;
+    private Map<Long, Integer> playerScores;
 
     public boolean isValid() {
         if(this.id == null) throw new IllegalArgumentException("ID is missing");
@@ -77,5 +79,13 @@ public class GameStateDTO {
 
     public void setPlayerId(Long playerId) {
         this.playerId = playerId;
+    }
+
+    public Map<Long, Integer> getPlayerScores() {
+        return playerScores;
+    }
+
+    public void setPlayerScores(Map<Long, Integer> playerScores) {
+        this.playerScores = playerScores;
     }
 }

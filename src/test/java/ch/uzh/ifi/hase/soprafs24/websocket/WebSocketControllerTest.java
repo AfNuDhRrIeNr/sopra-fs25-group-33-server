@@ -233,7 +233,7 @@ public class WebSocketControllerTest {
         MessageGameStateMessageDTO sentMessage = messageCaptor.getValue();
         assertEquals(gameId, sentMessage.getGameId());
         assertEquals(MessageStatus.VALIDATION_ERROR, sentMessage.getMessageStatus());
-        assertEquals("Game not found", sentMessage.getMessage());
+        assertEquals("404 NOT_FOUND \"Game not found\"", sentMessage.getMessage());
     }
 
     private static List<Transport> createTransportClient() {

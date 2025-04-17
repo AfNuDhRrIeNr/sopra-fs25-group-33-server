@@ -4,6 +4,9 @@ import ch.uzh.ifi.hase.soprafs24.constant.MessageStatus;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.MessageGameStateMessageDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.GameStateDTO;
 import ch.uzh.ifi.hase.soprafs24.service.MoveValidatorService;
+import ch.uzh.ifi.hase.soprafs24.service.MoveSubmitService;
+import ch.uzh.ifi.hase.soprafs24.repository.GameRepository;
+import ch.uzh.ifi.hase.soprafs24.entity.Game;
 import java.util.List;
 import java.util.Random;
 
@@ -23,6 +26,12 @@ public class WebSocketController {
 
     @Autowired
     private MoveValidatorService moveValidatorService;
+
+    @Autowired
+    private MoveSubmitService moveSubmitService;
+
+    @Autowired
+    private GameRepository gameRepository;
 
     @Autowired
     SimpMessagingTemplate simpleMessagingTemplate;
@@ -81,7 +90,7 @@ public class WebSocketController {
                         new MessageGameStateMessageDTO(
                             Long.valueOf(gameId),
                             MessageStatus.VALIDATION_ERROR,
-                            e.getReason(),
+                            e.getMessage(),
                             gameState
                         )
                 );
@@ -93,35 +102,42 @@ public class WebSocketController {
             }
         }
         else if (gameState.getAction().equals("SUBMIT")) {
-            // For submit, just broadcast the received message as is
-            // (persistence will be added later)
-
-            /*
-            Currently HARD CODED VALUES FOR FRONTEND TO IMPLEMENT THEIR STUFF
-             */
-            String[] userTiles = gameState.getUserTiles();
-            String[] newTiles = new String[userTiles.length];
-            for (int i = 0; i < userTiles.length; i++) {
-                newTiles[i] = userTiles[i] == "" ? String.valueOf(getRandomLetter()) : userTiles[i];
+            try {
+                // 1. Calculate score using MoveSubmitService
+                int score = moveSubmitService.submitMove(Long.valueOf(gameId), gameState.getBoard());
+                
+                // 2. Update the player's score
+                Game game = gameRepository.findById(Long.valueOf(gameId))
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found"));
+                
+                game.getPlayerScores();
+                game.addScore(gameState.getPlayerId(), score);
+                gameRepository.save(game);
+                
+                // 3. Add the updated scores to the response
+                gameState.setPlayerScores(game.getPlayerScores());
+                
+                logger.info("Player {} scored {} points in game {}", gameState.getPlayerId(), score, gameId);
+                
+                // 4. Return the updated game state to all players
+                return new MessageGameStateMessageDTO(
+                    Long.valueOf(gameId),
+                    MessageStatus.SUCCESS,
+                    "Move submitted, scored " + score + " points",
+                    gameState
+                );
+            } 
+            catch (ResponseStatusException e) {
+                logger.error("Error processing move submission: {}", e.getReason());
+                                     
+                return new MessageGameStateMessageDTO(
+                    Long.valueOf(gameId),
+                    MessageStatus.ERROR,
+                    "Error submitting move: " + e.getMessage(),
+                    gameState
+                );
             }
-            gameState.setUserTiles(newTiles);
-            logger.info("[LOG] Move submitted for gameId: '{}', userTiles: '{}'", gameId, gameState.getUserTiles());
-            simpleMessagingTemplate.convertAndSend(
-                    "/topic/game_states/users/" + gameState.getPlayerId(),
-                    new MessageGameStateMessageDTO(
-                            Long.valueOf(gameId),
-                            MessageStatus.SUCCESS,
-                            "Move submitted",
-                            gameState
-                    )
-            );
-            // ----------------------------------------------------------------
-            return new MessageGameStateMessageDTO(
-                Long.valueOf(gameId),
-                MessageStatus.SUCCESS,
-                "Move submitted",
-                gameState
-            );
+            
         } else if (gameState.getAction().equals("EXCHANGE")) {
             // HARD CODED VALUES FOR FRONTEND TO IMPLEMENT THEIR STUFF
             int n = gameState.getUserTiles().length;
@@ -136,7 +152,7 @@ public class WebSocketController {
                     "Tiles exchanged",
                     gameState
             );
-            // ---------------------------------------------------------
+
         }
 
         // Default response for other cases

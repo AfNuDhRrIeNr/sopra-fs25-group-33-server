@@ -10,7 +10,10 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Entity
 @Table(name = "GAME")
@@ -50,6 +53,9 @@ public class Game implements Serializable {
     // Transient means this field won't be persisted directly
     @Transient
     private String[][] board;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    private Map<Long, Integer> playerScores = new HashMap<>();
 
     // Get the in-memory 2D array representation
     public String[][] getBoard() {
@@ -109,6 +115,19 @@ public class Game implements Serializable {
             }
         }
         saveBoardState();
+    }
+
+    public void addScore(Long playerId, int points) {
+        int currentScore = playerScores.getOrDefault(playerId, 0);
+        playerScores.put(playerId, currentScore + points);
+    }
+
+    public int getPlayerScore(Long playerId) {
+        return playerScores.getOrDefault(playerId, 0);
+    }
+
+    public Map<Long, Integer> getPlayerScores() {
+        return Collections.unmodifiableMap(playerScores);
     }
 
     public Long getId() { return id; }
