@@ -5,6 +5,7 @@ import java.util.List;
 
 public class GamePutDTO {
     private GameStatus gameStatus;
+    private List<Character> newTiles;
 
     public GameStatus getGameStatus() {
         return gameStatus;
@@ -12,5 +13,12 @@ public class GamePutDTO {
 
     public void setGameStatus(GameStatus gameStatus) {
         this.gameStatus = gameStatus;
+    }
+    public List<Character> getNewTiles() {
+        return newTiles;
+    }
+
+    public void setNewTiles(List<Character> newTiles) {
+        this.newTiles = newTiles;
     }
 }

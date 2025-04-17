@@ -8,6 +8,8 @@ import ch.uzh.ifi.hase.soprafs24.service.MoveSubmitService;
 import ch.uzh.ifi.hase.soprafs24.repository.GameRepository;
 import ch.uzh.ifi.hase.soprafs24.entity.Game;
 import java.util.List;
+import java.util.Random;
+
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -64,7 +66,7 @@ public class WebSocketController {
                         Long.valueOf(gameId), 
                         gameState.getBoard()
                 );
-                
+
                 // Send validation success response ONLY to the requesting user
                 simpleMessagingTemplate.convertAndSend(
                         "/topic/game_states/users/" + gameState.getPlayerId(), 
@@ -135,6 +137,22 @@ public class WebSocketController {
                     gameState
                 );
             }
+            
+        } else if (gameState.getAction().equals("EXCHANGE")) {
+            // HARD CODED VALUES FOR FRONTEND TO IMPLEMENT THEIR STUFF
+            int n = gameState.getUserTiles().length;
+            String[] newUserTiles = new String[n];
+            for (int i = 0; i < n; i++) {
+                newUserTiles[i] = String.valueOf(getRandomLetter());
+            }
+            gameState.setUserTiles(newUserTiles);
+            return new MessageGameStateMessageDTO(
+                    Long.valueOf(gameId),
+                    MessageStatus.SUCCESS,
+                    "Tiles exchanged",
+                    gameState
+            );
+
         }
 
         // Default response for other cases
@@ -147,4 +165,10 @@ public class WebSocketController {
     }
 
     // ------------------ Moves ---------------------------------------------
+
+
+    private static char getRandomLetter() {
+        Random random = new Random();
+        return (char) ('A' + random.nextInt(26));
+    }
 }

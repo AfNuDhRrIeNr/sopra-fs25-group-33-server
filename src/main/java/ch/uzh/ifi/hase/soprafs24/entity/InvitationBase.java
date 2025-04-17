@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 public abstract class InvitationBase {
 
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
 
     // Who is receiving the invitation
