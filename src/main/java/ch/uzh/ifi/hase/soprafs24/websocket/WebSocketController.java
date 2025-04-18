@@ -6,9 +6,11 @@ import ch.uzh.ifi.hase.soprafs24.rest.dto.GameStateDTO;
 import ch.uzh.ifi.hase.soprafs24.service.MoveValidatorService;
 import ch.uzh.ifi.hase.soprafs24.service.MoveSubmitService;
 import ch.uzh.ifi.hase.soprafs24.repository.GameRepository;
+import ch.uzh.ifi.hase.soprafs24.service.GameService;
 import ch.uzh.ifi.hase.soprafs24.entity.Game;
 import java.util.List;
 import java.util.Random;
+import java.util.Arrays;
 
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +22,8 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 import org.slf4j.Logger;
 import org.springframework.web.server.ResponseStatusException;
+import ch.uzh.ifi.hase.soprafs24.constant.errors.GameNotFoundException;
+
 
 @Controller
 public class WebSocketController {
@@ -35,6 +39,9 @@ public class WebSocketController {
 
     @Autowired
     SimpMessagingTemplate simpleMessagingTemplate;
+
+    @Autowired
+    private GameService gameService;
 
     private static final Logger logger = LoggerFactory.getLogger(WebSocketController.class);
 
@@ -118,8 +125,37 @@ public class WebSocketController {
                 gameState.setPlayerScores(game.getPlayerScores());
                 
                 logger.info("Player {} scored {} points in game {}", gameState.getPlayerId(), score, gameId);
-                
-                // 4. Return the updated game state to all players
+                // 4. draw tiles to fill hand
+                int tilesToDraw = (int) Arrays.stream(gameState.getUserTiles())
+                    .filter(tile -> tile.isEmpty())
+                    .count();
+
+                List<Character> newTiles = new Random().ints(tilesToDraw, 'A', 'Z' + 1)
+                .mapToObj(c -> (char) c)
+                .toList();
+
+                // List<Character> newTiles = gameService.drawLetters(game, tilesToDraw);
+
+
+
+
+                logger.info("TilesToDraw passed");
+                // 5. Update the game state with the new tiles
+                gameState.setUserTiles(newTiles.stream()
+                    .map(String::valueOf) // Convert each Character to a String
+                    .toArray(String[]::new));
+                logger.info("UserTiles passed");
+                // 6. Send the updated game state to the player
+                simpleMessagingTemplate.convertAndSend(
+                        "/topic/game_states/users/" + gameState.getPlayerId(), 
+                        new MessageGameStateMessageDTO(
+                            Long.valueOf(gameId),
+                            MessageStatus.VALIDATION_SUCCESS,
+                            "Move submitted, scored " + score + " points",
+                            gameState
+                        )
+                );
+                // 5. Return the updated game state to all players
                 return new MessageGameStateMessageDTO(
                     Long.valueOf(gameId),
                     MessageStatus.SUCCESS,
@@ -136,33 +172,53 @@ public class WebSocketController {
                     "Error submitting move: " + e.getMessage(),
                     gameState
                 );
+            } catch (Exception e) {
+                logger.error("Unexpected error: {}", e.getMessage());
+                return new MessageGameStateMessageDTO(
+                    Long.valueOf(gameId),
+                    MessageStatus.ERROR,
+                    "Unexpected error: " + e.getMessage(),
+                    gameState
+                );
             }
             
-        } else if (gameState.getAction().equals("EXCHANGE")) {
-            // HARD CODED VALUES FOR FRONTEND TO IMPLEMENT THEIR STUFF
-            int n = gameState.getUserTiles().length;
-            String[] newUserTiles = new String[n];
-            for (int i = 0; i < n; i++) {
-                newUserTiles[i] = String.valueOf(getRandomLetter());
-            }
-            gameState.setUserTiles(newUserTiles);
-            return new MessageGameStateMessageDTO(
+        }  else if (gameState.getAction().equals("SKIP")) {
+            try {
+
+                logger.info("[LOG] Turn skipped for gameId: '{}'", gameId);
+                // Skip the turn
+                boolean isHostTurn = gameService.skipTurn(Long.valueOf(gameId), gameState.getPlayerId());
+                gameState.setUserTiles(null);
+                // Send skip success response to all players
+                return new MessageGameStateMessageDTO(
                     Long.valueOf(gameId),
                     MessageStatus.SUCCESS,
-                    "Tiles exchanged",
+                    isHostTurn ? "Guest skipped" : "Host skipped",
                     gameState
-            );
-
+                );
+            } catch (GameNotFoundException e) {
+                logger.error("Game not found: {}", e.getMessage());
+                return new MessageGameStateMessageDTO(
+                    Long.valueOf(gameId),
+                    MessageStatus.ERROR,
+                    "Game not found: " + e.getMessage(),
+                    gameState
+                );
+            } catch (ResponseStatusException e) {
+                logger.error("Error processing turn skip: {}", e.getReason());
+                return new MessageGameStateMessageDTO(
+                    Long.valueOf(gameId),
+                    MessageStatus.ERROR,
+                    "Error skipping turn: " + e.getMessage(),
+                    gameState
+                );
+            }
         }
-
-        // Default response for other cases
-        return new MessageGameStateMessageDTO(
-                Long.valueOf(gameId),
-                MessageStatus.SUCCESS,
-                "GameState successfully received",
-                gameState
-        );
-    }
+        else {
+            return null;
+        }
+    };
+    
 
     // ------------------ Moves ---------------------------------------------
 
