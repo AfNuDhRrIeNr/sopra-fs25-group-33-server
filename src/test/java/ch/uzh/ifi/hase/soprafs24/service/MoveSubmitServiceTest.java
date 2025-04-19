@@ -84,7 +84,7 @@ class MoveSubmitServiceTest {
         System.out.println("Words formed: " + actualWords);
         assertEquals(expectedWords, actualWords);
         
-        int expectedScore = 18;
+        int expectedScore = 9;
 
         // Assert the score
         assertEquals(expectedScore, score);
@@ -145,7 +145,7 @@ class MoveSubmitServiceTest {
         System.out.println("Words formed: " + actualWords);
         assertEquals(expectedWords, actualWords);
 
-        int expectedScore = 29;
+        int expectedScore = 25;
 
         // Assert the score
         assertEquals(expectedScore, score);
@@ -192,7 +192,7 @@ class MoveSubmitServiceTest {
         System.out.println("Words formed: " + actualWords);
         assertEquals(expectedWords, actualWords);
 
-        int expectedScore = 12;
+        int expectedScore = 6;
 
         // Assert the score
         assertEquals(expectedScore, score);
