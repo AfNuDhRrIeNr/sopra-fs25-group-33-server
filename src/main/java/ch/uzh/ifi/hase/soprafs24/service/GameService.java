@@ -80,6 +80,19 @@ public class GameService {
         return exchangedTiles;
     }
 
+    public boolean skipTurn(Long id, Long playerId) throws GameNotFoundException {
+        Optional<Game> gameOptional = gameRepository.findById(id);
+        if (gameOptional.isPresent()) {
+            Game game = gameOptional.get();
+            game.setHostTurn(!game.getHost().getId().equals(playerId));
+            gameRepository.save(game);
+            return game.isHostTurn();
+        } else {
+            log.warn("Game with id {} not found", id);
+            throw new GameNotFoundException("Game not found");
+        }
+    }
+
     public int countLettersInBag (Game game, Character letter) {
         int letterCount = game.getRemainingLetterCount(letter);
         return letterCount;
