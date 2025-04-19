@@ -36,7 +36,6 @@ public class BoardStatus {
         board[1][13] = DOUBLE_WORD;  board[2][12] = DOUBLE_WORD;  board[3][11] = DOUBLE_WORD;
         board[4][10] = DOUBLE_WORD;  board[10][4] = DOUBLE_WORD;  board[11][3] = DOUBLE_WORD;
         board[12][2] = DOUBLE_WORD;  board[13][1] = DOUBLE_WORD;
-        board[7][7] = DOUBLE_WORD;
 
         board[1][5] = TRIPLE_LETTER; board[1][9] = TRIPLE_LETTER;
         board[5][1] = TRIPLE_LETTER; board[5][5] = TRIPLE_LETTER; board[5][9] = TRIPLE_LETTER; board[5][13] = TRIPLE_LETTER;
