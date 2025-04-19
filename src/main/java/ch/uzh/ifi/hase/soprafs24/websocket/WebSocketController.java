@@ -150,11 +150,12 @@ public class WebSocketController {
                         "/topic/game_states/users/" + gameState.getPlayerId(), 
                         new MessageGameStateMessageDTO(
                             Long.valueOf(gameId),
-                            MessageStatus.VALIDATION_SUCCESS,
+                            MessageStatus.SUCCESS,
                             "Move submitted, scored " + score + " points",
                             gameState
                         )
                 );
+                logger.info("Personal message sent.");
                 // 5. Return the updated game state to all players
                 return new MessageGameStateMessageDTO(
                     Long.valueOf(gameId),
@@ -182,18 +183,18 @@ public class WebSocketController {
                 );
             }
             
-        }  else if (gameState.getAction().equals("SKIP")) {
+        }  else if (gameState.getAction().equals("SKIP") || gameState.getAction().equals("EXCHANGE")) {
             try {
 
-                logger.info("[LOG] Turn skipped for gameId: '{}'", gameId);
+                logger.info("Switching Turn for game: '{}'", gameId);
                 // Skip the turn
                 boolean isHostTurn = gameService.skipTurn(Long.valueOf(gameId), gameState.getPlayerId());
-                gameState.setUserTiles(null);
+                gameState.setUserTiles(new String[7]);
                 // Send skip success response to all players
                 return new MessageGameStateMessageDTO(
                     Long.valueOf(gameId),
                     MessageStatus.SUCCESS,
-                    isHostTurn ? "Guest skipped" : "Host skipped",
+                    gameState.getAction().equals("SKIP") ? "Move skipped" : "Tiles exchanged",
                     gameState
                 );
             } catch (GameNotFoundException e) {
@@ -212,6 +213,9 @@ public class WebSocketController {
                     "Error skipping turn: " + e.getMessage(),
                     gameState
                 );
+            } catch (Exception e) {
+                logger.info("Unexpected error: {}", e.getMessage());
+                return null;
             }
         }
         else {
