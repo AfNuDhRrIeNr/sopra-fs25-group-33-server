@@ -93,14 +93,20 @@ public class MoveSubmitService {
             int letterScore = LetterPoints.getPoints(letter);
             System.out.println("Letter: " + letter + ", Base score: " + letterScore);
 
+            boolean isNewTile = oldBoard[curX][curY].equals("") && !newBoard[curX][curY].equals("");
+
             String multiplier = BoardStatus.getMultiplier(curX, curY);
             System.out.println("Multiplier at (" + curX + "," + curY + "): " + multiplier);
 
-            if (BoardStatus.DOUBLE_LETTER.equals(multiplier)) {
-                letterScore *= 2;
-            } else if (BoardStatus.TRIPLE_LETTER.equals(multiplier)) {
-                letterScore *= 3;
-            } else if (BoardStatus.DOUBLE_WORD.equals(multiplier)) {
+            if (isNewTile){
+                if (BoardStatus.DOUBLE_LETTER.equals(multiplier)) {
+                    letterScore *= 2;
+                } else if (BoardStatus.TRIPLE_LETTER.equals(multiplier)) {
+                    letterScore *= 3;
+                }
+            } 
+            
+            if (BoardStatus.DOUBLE_WORD.equals(multiplier)) {
                 wordMultiplier *= 2;
             } else if (BoardStatus.TRIPLE_WORD.equals(multiplier)) {
                 wordMultiplier *= 3;
