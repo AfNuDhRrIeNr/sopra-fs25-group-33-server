@@ -38,6 +38,7 @@ public class GameService {
         Game game = new Game();
         game.setHost(host);
         game.getUsers().add(host);
+        game.setGameStatus(GameStatus.CREATED);
         return gameRepository.save(game);
     }
 

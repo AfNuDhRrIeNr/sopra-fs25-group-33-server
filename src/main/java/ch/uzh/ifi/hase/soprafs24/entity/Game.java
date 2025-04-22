@@ -37,7 +37,7 @@ public class Game implements Serializable {
 
     private GameStatus gameStatus = GameStatus.CREATED;
 
-    @Column(name = "start_time")
+    @Column(nullable = true)
     private LocalDateTime startTime;
 
     @ElementCollection
