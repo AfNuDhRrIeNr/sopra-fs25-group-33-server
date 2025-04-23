@@ -1,6 +1,7 @@
 package ch.uzh.ifi.hase.soprafs24.service;
 
 import ch.uzh.ifi.hase.soprafs24.constant.GameStatus;
+import ch.uzh.ifi.hase.soprafs24.constant.UserStatus;
 import ch.uzh.ifi.hase.soprafs24.constant.errors.GameNotFoundException;
 import ch.uzh.ifi.hase.soprafs24.constant.errors.InvalidGameStatusException;
 import ch.uzh.ifi.hase.soprafs24.constant.errors.UserNotFoundException;
@@ -39,6 +40,8 @@ public class GameService {
         game.setHost(host);
         game.getUsers().add(host);
         game.setGameStatus(GameStatus.CREATED);
+        game.getHost().setInGame(true);
+        game.getHost().setStatus(UserStatus.IN_GAME);
         return gameRepository.save(game);
     }
 

@@ -66,7 +66,9 @@ public class GameServiceTest {
         // Assert
         assertNotNull(createdGame);
         assertEquals(testGame.getId(), createdGame.getId());
-        assertEquals(testHost, createdGame.getHost());
+        assertEquals(testHost.getId(), createdGame.getHost().getId());
+        assertEquals(UserStatus.IN_GAME, createdGame.getHost().getStatus());
+        assertEquals(true, createdGame.getHost().isInGame());
         verify(gameRepository, times(1)).save(any(Game.class));
     }
 
