@@ -100,23 +100,6 @@ class GameInvitationServiceTest {
     }
 
     @Test
-    void createGameInvitation_inviteAlreadyExists_throwsException() {
-        // Assign
-        Game game = new Game(); game.setId(1L);
-        User sender = new User(); sender.setId(1L);
-        User target = new User(); target.setId(2L);
-
-        Mockito.when(gameService.getGameById(1L)).thenReturn(Optional.of(game));
-        Mockito.when(userService.getUserById(1L)).thenReturn(Optional.of(sender));
-        Mockito.when(userService.getUserById(2L)).thenReturn(Optional.of(target));
-        Mockito.when(gameInvitationRepository.findByGameAndTarget(game, target)).thenReturn(Optional.of(new GameInvitation()));
-
-        // Act & Assert
-        assertThrows(IllegalArgumentException.class, () ->
-                gameInvitationService.createGameInvitation(Optional.of(game), Optional.of(sender), Optional.of(target)));
-    }
-
-    @Test
     void updateGameInvitation_gameAlreadyFull_throwsException() throws UserNotFoundException, GameNotFoundException {
         // Assign
         Game game = new Game(); game.setId(1L);
@@ -143,5 +126,36 @@ class GameInvitationServiceTest {
          Mockito.verify(gameInvitationRepository, Mockito.never()).saveAndFlush(any());
          Mockito.verify(userService, Mockito.never()).updateUserStatus(any(), any());
          Mockito.verify(gameService, Mockito.never()).joinGame(any(), any());
+    }
+
+    @Test
+    void createGameInvitation_invitationAlreadyExists_reuseInvitation() throws UserNotFoundException, GameNotFoundException {
+        // Assign
+        Game game = new Game(); game.setId(1L);
+        User sender = new User(); sender.setId(1L);
+        User target = new User(); target.setId(2L);
+
+        Mockito.when(gameService.getGameById(1L)).thenReturn(Optional.of(game));
+        Mockito.when(userService.getUserById(1L)).thenReturn(Optional.of(sender));
+        Mockito.when(userService.getUserById(2L)).thenReturn(Optional.of(target));
+
+        GameInvitation existingInvitation = new GameInvitation();
+        existingInvitation.setId(1L);
+        existingInvitation.setGame(game);
+        existingInvitation.setSender(sender);
+        existingInvitation.setTarget(target);
+        existingInvitation.setStatus(InvitationStatus.PENDING);
+
+        Mockito.when(gameInvitationRepository.findByGameAndTarget(game, target)).thenReturn(Optional.of(existingInvitation));
+        Mockito.when(gameInvitationRepository.saveAndFlush(Mockito.any())).thenReturn(existingInvitation);
+
+        // Act
+        GameInvitation created = gameInvitationService.createGameInvitation(Optional.of(game), Optional.of(sender), Optional.of(target));
+
+        // Assert
+        assertEquals(existingInvitation.getId(), created.getId());
+        assertEquals(InvitationStatus.PENDING, created.getStatus());
+        Mockito.verify(gameInvitationRepository, Mockito.times(1)).saveAndFlush(existingInvitation);
+        Mockito.verify(gameInvitationRepository,Mockito.atLeastOnce()).findByGameAndTarget(game, target);
     }
 }

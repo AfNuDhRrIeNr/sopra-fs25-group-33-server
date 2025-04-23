@@ -57,8 +57,12 @@ public class GameInvitationService {
         Game game = optionalGame.get();
         User sender = optionalSender.get();
         User target = optionalTarget.get();
-        if(gameInvitationRepository.findByGameAndTarget(game, target).isPresent()) throw new IllegalArgumentException("Game invitation already exists");
-
+        if(gameInvitationRepository.findByGameAndTarget(game, target).isPresent()) {
+            log.info("Game invitation already exists - overwriting existing invitation");
+            GameInvitation gameInvitation = gameInvitationRepository.findByGameAndTarget(game, target).get();
+            gameInvitation.setStatus(InvitationStatus.PENDING);
+            return gameInvitationRepository.saveAndFlush(gameInvitation);
+        }
 
         GameInvitation gameInvitation = new GameInvitation();
         gameInvitation.setGame(game);
