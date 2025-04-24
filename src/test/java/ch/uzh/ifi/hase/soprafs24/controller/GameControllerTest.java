@@ -108,8 +108,6 @@ public class GameControllerTest {
         game.setId(1L);
         game.setHost(user);
 
-        GameGetDTO gameGetDTO = new GameGetDTO();
-        gameGetDTO.setHost(DTOMapper.INSTANCE.convertEntityToUserGetDTO(user));
 
         given(gameService.getGameById(1L)).willReturn(Optional.of(game));
 
