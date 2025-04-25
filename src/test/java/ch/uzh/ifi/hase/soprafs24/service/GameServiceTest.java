@@ -4,6 +4,7 @@ import ch.uzh.ifi.hase.soprafs24.constant.GameStatus;
 import ch.uzh.ifi.hase.soprafs24.constant.UserStatus;
 import ch.uzh.ifi.hase.soprafs24.constant.errors.GameNotFoundException;
 import ch.uzh.ifi.hase.soprafs24.constant.errors.UserNotFoundException;
+import ch.uzh.ifi.hase.soprafs24.constant.errors.InvalidGameStatusException;
 import ch.uzh.ifi.hase.soprafs24.entity.Game;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
 import ch.uzh.ifi.hase.soprafs24.repository.GameRepository;
@@ -95,6 +96,23 @@ public class GameServiceTest {
         // Act & Assert
         assertThrows(GameNotFoundException.class, () -> gameService.updateGameStatus(testGame, GameStatus.ONGOING));
         verify(gameRepository, times(1)).findById(testGame.getId());
+    }
+    @Test
+    public void updateGameStatus_invalidTransition_throwsException() {
+        // Arrange
+        Game game = new Game();
+        game.setId(1L);
+        game.setGameStatus(GameStatus.TERMINATED);
+
+        when(gameRepository.findById(game.getId())).thenReturn(Optional.of(game));
+
+        // Act & Assert
+        InvalidGameStatusException exception = assertThrows(InvalidGameStatusException.class, () -> {
+        gameService.updateGameStatus(game, GameStatus.ONGOING);
+        });
+
+        assertEquals("Invalid game status transition from TERMINATED to ONGOING", exception.getMessage());
+        verify(gameRepository, times(1)).findById(game.getId());
     }
 
     @Test
