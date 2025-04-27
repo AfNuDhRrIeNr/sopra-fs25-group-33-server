@@ -1,8 +1,11 @@
 package ch.uzh.ifi.hase.soprafs24.websocket;
 
 import ch.uzh.ifi.hase.soprafs24.constant.MessageStatus;
+import ch.uzh.ifi.hase.soprafs24.entity.Game;
+import ch.uzh.ifi.hase.soprafs24.repository.GameRepository;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.GameStateDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.MessageGameStateMessageDTO;
+import ch.uzh.ifi.hase.soprafs24.service.MoveSubmitService;
 import ch.uzh.ifi.hase.soprafs24.service.MoveValidatorService;
 import org.junit.jupiter.api.*;
 import org.junit.runner.RunWith;
@@ -26,10 +29,14 @@ import org.springframework.web.socket.sockjs.client.SockJsClient;
 import org.springframework.web.socket.sockjs.client.Transport;
 import org.springframework.web.socket.sockjs.client.WebSocketTransport;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -59,6 +66,12 @@ public class WebSocketControllerTest {
 
     @Autowired
     private WebSocketController webSocketController;
+
+    @MockBean
+    private MoveSubmitService moveSubmitService;
+
+    @MockBean
+    private GameRepository gameRepository;
 
     @MockBean
     private MoveValidatorService moveValidatorService;
@@ -254,5 +267,57 @@ public class WebSocketControllerTest {
         public void handleFrame(StompHeaders stompHeaders, Object o) {
             completableFuture.complete((MessageGameStateMessageDTO) o);
         }
+    }
+
+    @Test
+    void testSubmitMove_success() {
+        // Given
+        Long gameId = 1L;
+        Long playerId = 123L;
+
+        GameStateDTO gameState = new GameStateDTO();
+        gameState.setId(gameId);
+        gameState.setPlayerId(playerId);
+        gameState.setAction("SUBMIT");
+        gameState.setToken("test-token");
+        gameState.setUserTiles(new String[]{"A", "B", "C", "D", "E"});
+        
+        String[][] board = new String[15][15];
+        for (int i = 0; i < 15; i++) {
+            for (int j = 0; j < 15; j++) {
+                board[i][j] = "";
+            }
+        }
+        board[7][7] = "H";
+        board[7][8] = "E";
+        board[7][9] = "L";
+        board[7][10] = "L";
+        board[7][11] = "O";
+        gameState.setBoard(board);
+
+        // Mock services
+        int expectedScore = 10;
+        when(moveSubmitService.submitMove(eq(gameId), any())).thenReturn(expectedScore);
+        
+        // Create mock game object with player scores
+        Game mockGame = Mockito.mock(Game.class);
+        Map<Long, Integer> playerScores = new HashMap<>();
+        playerScores.put(playerId, expectedScore);
+        when(mockGame.getPlayerScores()).thenReturn(playerScores);
+        when(gameRepository.findById(gameId)).thenReturn(Optional.of(mockGame));
+
+        // When
+        MessageGameStateMessageDTO result = webSocketController.handleGameStates(
+                gameId.toString(), gameState);
+
+        // Then
+        assertNotNull(result);
+        assertEquals(gameId, result.getGameId());
+        assertEquals(MessageStatus.SUCCESS, result.getMessageStatus());
+        assertEquals("Move submitted, scored " + expectedScore + " points", result.getMessage());
+        
+        // Verify player score was updated
+        verify(mockGame).addScore(playerId, expectedScore);
+        verify(gameRepository).save(mockGame);
     }
 }
