@@ -140,4 +140,18 @@ public class GameServiceTest {
         verify(gameRepository, times(1)).findById(testGame.getId());
     }
 
+    @Test
+    void testAssignLetters() {
+        // Arrange
+        when(gameRepository.findById(testGame.getId())).thenReturn(Optional.of(testGame));
+        when(gameRepository.saveAndFlush(testGame)).thenReturn(testGame);
+
+        // Act
+        List<Character> assignedLetters = gameService.assignLetters(testGame, 3, testHost.getId());
+
+        // Assert
+        assertNotNull(assignedLetters);
+        assertEquals(3, assignedLetters.size());
+    }
+
 }

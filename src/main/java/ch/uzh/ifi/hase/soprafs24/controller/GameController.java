@@ -92,22 +92,22 @@ public class GameController {
 
 
     @ResponseStatus(HttpStatus.OK)
-    @PutMapping("/games/{id}/assign")
-    public GamePutDTO assignTiles(@PathVariable Long id, @RequestParam int count) {
+    @PutMapping("/games/{id}/users/{userId}/assign")
+    public GamePutDTO assignTiles(@PathVariable Long id, @PathVariable Long userId, @RequestParam int count) {
         Game game = gameService.getGameById(id)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found"));
-        List<Character> newTiles =gameService.drawLetters(game, count);
+        List<Character> newTiles = gameService.assignLetters(game, count, userId);
         GamePutDTO response = new GamePutDTO();
         response.setNewTiles(newTiles);
         return response;
     }
 
     @ResponseStatus(HttpStatus.OK)
-    @PutMapping("/games/{id}/exchange")
-    public GamePutDTO exchangeTiles(@PathVariable Long id, @RequestBody List<Character> tilesForExchange) {
+    @PutMapping("/games/{id}/users/{userId}/exchange")
+    public GamePutDTO exchangeTiles(@PathVariable Long id, @PathVariable Long userId, @RequestBody List<Character> tilesForExchange) {
         Game game = gameService.getGameById(id)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found"));
-        List<Character> newTiles = gameService.exchangeTiles(game, tilesForExchange);
+        List<Character> newTiles = gameService.exchangeTiles(game, tilesForExchange, userId);
         GamePutDTO response = new GamePutDTO();
         response.setNewTiles(newTiles);
         return response;

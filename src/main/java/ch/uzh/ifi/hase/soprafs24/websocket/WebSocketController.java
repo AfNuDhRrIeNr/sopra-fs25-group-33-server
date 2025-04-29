@@ -1,6 +1,7 @@
 package ch.uzh.ifi.hase.soprafs24.websocket;
 
 import ch.uzh.ifi.hase.soprafs24.constant.MessageStatus;
+import ch.uzh.ifi.hase.soprafs24.constant.MoveType;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.MessageGameStateMessageDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.GameStateDTO;
 import ch.uzh.ifi.hase.soprafs24.service.MoveValidatorService;
@@ -9,6 +10,7 @@ import ch.uzh.ifi.hase.soprafs24.repository.GameRepository;
 import ch.uzh.ifi.hase.soprafs24.service.GameService;
 import ch.uzh.ifi.hase.soprafs24.entity.Game;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 import java.util.Arrays;
 
@@ -19,6 +21,7 @@ import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.messaging.simp.annotation.SubscribeMapping;
 import org.springframework.stereotype.Controller;
 import org.slf4j.Logger;
 import org.springframework.web.server.ResponseStatusException;
@@ -45,11 +48,15 @@ public class WebSocketController {
 
     private static final Logger logger = LoggerFactory.getLogger(WebSocketController.class);
 
+
+
+
     // ------------------ Game State ---------------------------------------
     @MessageMapping("/game_states/{gameId}")
     @SendTo("/topic/game_states/{gameId}")
     public MessageGameStateMessageDTO handleGameStates(@DestinationVariable String gameId, GameStateDTO gameState) {
         logger.debug("[LOG] Game endpoint reached with gameId: '{}' and gameState entity: '{}'",gameId, gameState.toString());
+        logger.info("Game endpoint reached with gameId: '{}' and gameState entity: '{}'",gameId, gameState.toString());
         // Verify DTO
         try {
             gameState.isValid();
@@ -218,11 +225,35 @@ public class WebSocketController {
                 return null;
             }
         }
-        else {
-            return null;
+        else if (gameState.getAction().equals("FETCH_GAMESTATE")) {
+            Optional<Game> gameOptional = gameService.getGameById(Long.valueOf(gameId));
+            if(gameOptional.isEmpty()) {
+                logger.error("Error while fetching game state. Game was not found.");
+                return new MessageGameStateMessageDTO(
+                        Long.valueOf(gameId),
+                        MessageStatus.ERROR,
+                        "Error while fetching game state. Game was not found.",
+                        gameState
+                );
+            }
+            Game game = gameOptional.get();
+            gameState.setBoard(game.getBoard());
+            gameState.setUserTiles(game.getPlayerTiles(gameState.getPlayerId()));
+            gameState.setPlayerScores(game.getPlayerScores());
+            gameState.setAction("FETCH_GAMESTATE");
+            simpleMessagingTemplate.convertAndSend(
+                    "/topic/game_states/users/" + gameState.getPlayerId(),
+                    new MessageGameStateMessageDTO(
+                            Long.valueOf(gameId),
+                            MessageStatus.SUCCESS,
+                            "Game state fetched successfully",
+                            gameState
+                    )
+            );
         }
-    };
-    
+        return null;
+    }
+
 
     // ------------------ Moves ---------------------------------------------
 

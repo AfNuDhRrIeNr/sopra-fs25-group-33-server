@@ -88,4 +88,13 @@ public class GameStateDTO {
     public void setPlayerScores(Map<Long, Integer> playerScores) {
         this.playerScores = playerScores;
     }
+
+
+    public MoveType getType() {
+        return type;
+    }
+
+    public void setType(MoveType type) {
+        this.type = type;
+    }
 }

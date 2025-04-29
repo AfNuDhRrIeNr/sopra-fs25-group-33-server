@@ -14,6 +14,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import java.util.Optional;
@@ -69,16 +72,34 @@ public class GameService {
         return gameRepository.saveAndFlush(game);
     }
 
-    public List<Character> drawLetters(Game game, int count) {
-        List<Character> assignedLetters = game.drawLetters(count);
-        gameRepository.saveAndFlush(game);
-        return assignedLetters;
-    }
-
-    public List<Character> exchangeTiles(Game game, List<Character> tilesToExchange) {
+    public List<Character> exchangeTiles(Game game, List<Character> tilesToExchange, Long userId) {
         List<Character> exchangedTiles = game.exchangeTiles(tilesToExchange);
+
+        // Corrected conversion from array to list
+        List<String> allNewTiles = new ArrayList<>(Arrays.asList(game.getPlayerTiles(userId)));
+
+        for (int i = 0; i < tilesToExchange.size(); i++) {
+            Character oldTile = tilesToExchange.get(i);
+            allNewTiles.remove(oldTile.toString());
+            allNewTiles.add(exchangedTiles.get(i).toString());
+        }
+
+        game.setTilesForPlayer(userId, allNewTiles);
         gameRepository.saveAndFlush(game);
         return exchangedTiles;
+    }
+
+    public List<Character> assignLetters(Game game, int count, Long userId) {
+        List<Character> tilesToExchange = new ArrayList<>();
+        for(int i = 0; i< count; i++) tilesToExchange.add(' ');
+        List<Character> newTiles = game.exchangeTiles(tilesToExchange);
+        List<String> allNewTiles = new ArrayList<>();
+        for (char tile : newTiles) {
+            allNewTiles.add(String.valueOf(tile));
+        }
+        game.setTilesForPlayer(userId, allNewTiles);
+        gameRepository.saveAndFlush(game);
+        return newTiles;
     }
 
     public boolean skipTurn(Long id, Long playerId) throws GameNotFoundException {

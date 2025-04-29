@@ -57,6 +57,26 @@ public class Game implements Serializable {
     @ElementCollection(fetch = FetchType.EAGER)
     private Map<Long, Integer> playerScores = new HashMap<>();
 
+    @ElementCollection(fetch = FetchType.EAGER)
+    private Map<Long, String> playerTiles = new HashMap<>();
+
+    @Transient
+    private Map<Long, List<String>> playerTilesList = new HashMap<>();
+
+    public String[] getPlayerTiles(Long userId) {
+        if(!playerTilesList.containsKey(userId)) throw new IllegalArgumentException("User id not found!");
+        return playerTiles.get(userId).split("");
+    }
+
+    public void setTilesForPlayer(Long userId, List<String> tiles) {
+        playerTilesList.put(userId,tiles);
+        String tilesAsString = "";
+        for (String tile: tiles) {
+            tilesAsString+= tile;
+        }
+        playerTiles.put(userId,tilesAsString);
+    }
+
     // Get the in-memory 2D array representation
     public String[][] getBoard() {
         if (board == null && boardState != null) {
@@ -182,10 +202,13 @@ public class Game implements Serializable {
         // Usage:
         // List<Character> currentLetters = List.of('A', 'B', 'C');
         // List<Character> newLetters = game.exchangeLetters(currentLetters);
+        List<Character> newLetters = drawLetters(currentLetters.size());
+
         for (char letter : currentLetters) {
+            if(letter == ' ') continue; // Skip empty letters for example for new game
             letterBag.put(letter, letterBag.getOrDefault(letter, 0) + 1);
         }
-        return drawLetters(currentLetters.size());
+        return newLetters;
     }
 }
 
