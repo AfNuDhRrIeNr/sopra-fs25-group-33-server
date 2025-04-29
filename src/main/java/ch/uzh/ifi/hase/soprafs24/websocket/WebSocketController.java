@@ -1,6 +1,7 @@
 package ch.uzh.ifi.hase.soprafs24.websocket;
 
 import ch.uzh.ifi.hase.soprafs24.constant.MessageStatus;
+import ch.uzh.ifi.hase.soprafs24.constant.GameStatus;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.MessageGameStateMessageDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.GameStateDTO;
 import ch.uzh.ifi.hase.soprafs24.service.MoveValidatorService;
@@ -216,6 +217,56 @@ public class WebSocketController {
             } catch (Exception e) {
                 logger.info("Unexpected error: {}", e.getMessage());
                 return null;
+            }
+        }
+        else if (gameState.getAction().equals("GIVE_UP")) {
+            try {
+                logger.info("Player {} is giving up in game {}", gameState.getPlayerId(), gameId);
+
+                Game game = gameRepository.findById(Long.valueOf(gameId))
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found"));
+
+                game.getUsers().removeIf(user -> user.getId().equals(gameState.getPlayerId()));
+
+                if (game.getUsers().isEmpty()) {
+                    game.setGameStatus(GameStatus.TERMINATED);
+                }
+                gameRepository.save(game);
+
+                simpleMessagingTemplate.convertAndSend(
+                    "/topic/game_states/" + gameId,
+                    new MessageGameStateMessageDTO(
+                        Long.valueOf(gameId),
+                        MessageStatus.SUCCESS,
+                        "Player " + gameState.getPlayerId() + " has given up.",
+                        gameState
+                    )
+                );
+        
+                logger.info("Player {} has successfully given up in game {}", gameState.getPlayerId(), gameId);
+        
+                return new MessageGameStateMessageDTO(
+                    Long.valueOf(gameId),
+                    MessageStatus.SUCCESS,
+                    "Player " + gameState.getPlayerId() + " has given up.",
+                    gameState
+                );
+            } catch (ResponseStatusException e) {
+                logger.error("Error processing give-up action: {}", e.getReason());
+                return new MessageGameStateMessageDTO(
+                    Long.valueOf(gameId),
+                    MessageStatus.ERROR,
+                    "Error giving up: " + e.getMessage(),
+                    gameState
+                );
+            } catch (Exception e) {
+                logger.error("Unexpected error during give-up: {}", e.getMessage());
+                return new MessageGameStateMessageDTO(
+                    Long.valueOf(gameId),
+                    MessageStatus.ERROR,
+                    "Unexpected error: " + e.getMessage(),
+                    gameState
+                );
             }
         }
         else {
