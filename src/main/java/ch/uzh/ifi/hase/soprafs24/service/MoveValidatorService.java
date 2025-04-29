@@ -58,11 +58,21 @@ public class MoveValidatorService {
                 throw new IllegalArgumentException("No valid words formed");
             }
             
-            // Dictionary validation
+            // Dictionary validation - CHANGED: collect all invalid words
+            List<String> invalidWords = new ArrayList<>();
             for (String word : formedWords) {
                 if (!isValidWord(word)) {
-                    throw new IllegalArgumentException("Invalid word: " + word);
+                    invalidWords.add(word);
                 }
+            }
+            
+            // If there are invalid words, throw an exception with all of them
+            if (!invalidWords.isEmpty()) {
+                throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, 
+                    "The following words are not in the dictionary: '" + 
+                    String.join("', '", invalidWords) + "'"
+                );
             }
             
             return formedWords;

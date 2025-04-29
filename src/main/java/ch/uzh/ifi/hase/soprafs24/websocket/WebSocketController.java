@@ -11,6 +11,7 @@ import ch.uzh.ifi.hase.soprafs24.entity.Game;
 import java.util.List;
 import java.util.Random;
 import java.util.Arrays;
+import java.util.ArrayList;
 
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -91,13 +92,19 @@ public class WebSocketController {
                 return null;
             } 
             catch (ResponseStatusException e) {
+                // Extract invalid words from the error message
+                List<String> invalidWords = extractInvalidWordsFromError(e.getMessage());
+                
+                // Set the invalid words in the gameState
+                gameState.setRequestedWords(invalidWords);
+                
                 // Send validation error ONLY to the requesting user
                 simpleMessagingTemplate.convertAndSend(
                         "/topic/game_states/users/" + gameState.getPlayerId(), 
                         new MessageGameStateMessageDTO(
                             Long.valueOf(gameId),
                             MessageStatus.VALIDATION_ERROR,
-                            e.getMessage(),
+                            e.getMessage() + " (You can ask your friend if these words are valid)",
                             gameState
                         )
                 );
@@ -218,6 +225,69 @@ public class WebSocketController {
                 return null;
             }
         }
+        else if (gameState.getAction().equals("REQUEST_VALIDATION")) {
+            try {
+                // Store requesting player's ID
+                gameState.setRequestingPlayerId(gameState.getPlayerId());
+                
+                // Send to all players so opponent can respond
+                return new MessageGameStateMessageDTO(
+                    Long.valueOf(gameId),
+                    MessageStatus.VALIDATION_REQUEST,
+                    "Player " + gameState.getPlayerId() + " is asking if these words are valid: " + 
+                        String.join(", ", gameState.getRequestedWords()),
+                    gameState
+                );
+            } catch (Exception e) {
+                return new MessageGameStateMessageDTO(
+                    Long.valueOf(gameId),
+                    MessageStatus.ERROR,
+                    "Error requesting validation: " + e.getMessage(),
+                    gameState
+                );
+            }
+        }
+        else if (gameState.getAction().equals("ACCEPT_WORD")) {
+            try {
+                // Calculate score and update game
+                int score = moveSubmitService.submitMove(Long.valueOf(gameId), gameState.getBoard());
+                
+                Game game = gameRepository.findById(Long.valueOf(gameId))
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found"));
+                
+                // Update requesting player's score
+                game.addScore(gameState.getRequestingPlayerId(), score);
+                gameRepository.save(game);
+                
+                // Add updated scores to response
+                gameState.setPlayerScores(game.getPlayerScores());
+                
+                // Send response to all players
+                return new MessageGameStateMessageDTO(
+                    Long.valueOf(gameId),
+                    MessageStatus.VALIDATION_ACCEPTED,
+                    "Words accepted: " + String.join(", ", gameState.getRequestedWords()) + 
+                        ", scored " + score + " points",
+                    gameState
+                );
+            } catch (Exception e) {
+                return new MessageGameStateMessageDTO(
+                    Long.valueOf(gameId),
+                    MessageStatus.ERROR,
+                    "Error accepting words: " + e.getMessage(),
+                    gameState
+                );
+            }
+        }
+        else if (gameState.getAction().equals("REJECT_WORD")) {
+            // Simply notify that the words were rejected
+            return new MessageGameStateMessageDTO(
+                Long.valueOf(gameId),
+                MessageStatus.VALIDATION_REJECTED,
+                "Words rejected: " + String.join(", ", gameState.getRequestedWords()),
+                gameState
+            );
+        }
         else {
             return null;
         }
@@ -230,5 +300,26 @@ public class WebSocketController {
     private static char getRandomLetter() {
         Random random = new Random();
         return (char) ('A' + random.nextInt(26));
+    }
+
+    // Add this helper method to extract invalid words from error message
+    private List<String> extractInvalidWordsFromError(String errorMessage) {
+        List<String> words = new ArrayList<>();
+        
+        if (errorMessage != null && errorMessage.contains("not in the dictionary")) {
+            int startSearch = 0;
+            while (true) {
+                int start = errorMessage.indexOf("'", startSearch);
+                if (start == -1) break;
+                
+                int end = errorMessage.indexOf("'", start + 1);
+                if (end == -1) break;
+                
+                words.add(errorMessage.substring(start + 1, end));
+                startSearch = end + 1;
+            }
+        }
+        
+        return words;
     }
 }

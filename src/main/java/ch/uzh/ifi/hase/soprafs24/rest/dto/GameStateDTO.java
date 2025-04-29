@@ -22,6 +22,10 @@ public class GameStateDTO {
     private Long playerId;
     private Map<Long, Integer> playerScores;
 
+    // Add these new fields
+    private List<String> requestedWords; // Replace single requestedWord
+    private Long requestingPlayerId;    // The player who's requesting validation
+
     public boolean isValid() {
         if(this.id == null) throw new IllegalArgumentException("ID is missing");
         if(this.action == null) throw new IllegalArgumentException("Action is missing");
@@ -87,5 +91,21 @@ public class GameStateDTO {
 
     public void setPlayerScores(Map<Long, Integer> playerScores) {
         this.playerScores = playerScores;
+    }
+
+    public List<String> getRequestedWords() {
+        return requestedWords;
+    }
+
+    public void setRequestedWords(List<String> requestedWords) {
+        this.requestedWords = requestedWords;
+    }
+
+    public Long getRequestingPlayerId() {
+        return requestingPlayerId;
+    }
+
+    public void setRequestingPlayerId(Long requestingPlayerId) {
+        this.requestingPlayerId = requestingPlayerId;
     }
 }
