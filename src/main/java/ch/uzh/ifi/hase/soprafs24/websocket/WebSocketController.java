@@ -229,26 +229,20 @@ public class WebSocketController {
                 game.setGameStatus(GameStatus.TERMINATED);
                 gameRepository.save(game);
         
-                game.getUsers().forEach(user -> {
-                    simpleMessagingTemplate.convertAndSend(
-                        "/topic/game_states/users/" + user.getId(),
-                        new MessageGameStateMessageDTO(
-                            Long.valueOf(gameId),
-                            MessageStatus.SUCCESS,
-                            "The game has ended.",
-                            gameState
-                        )
-                    );
-                });
-        
                 logger.info("Game {} has been successfully terminated.", gameId);
+
         
-                return new MessageGameStateMessageDTO(
-                    Long.valueOf(gameId),
-                    MessageStatus.SUCCESS,
-                    "Game has been terminated successfully.",
-                    gameState
+                simpleMessagingTemplate.convertAndSend(
+                    "/topic/game_states/" + gameId,
+                    new MessageGameStateMessageDTO(
+                        Long.valueOf(gameId),
+                        MessageStatus.SUCCESS,
+                        "The game has ended.",
+                        gameState
+                    )
                 );
+
+                return null;
             } catch (ResponseStatusException e) {
                 logger.error("Error processing game end action: {}", e.getReason());
                 return new MessageGameStateMessageDTO(
