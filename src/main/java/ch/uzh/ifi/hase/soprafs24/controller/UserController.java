@@ -92,12 +92,10 @@ public class UserController {
     @ResponseStatus(HttpStatus.OK)
     @ResponseBody
     public UserGetDTO logoutUser(@RequestHeader("Authorization") String token) {
-        // Verify token is provided
         if(token == null || token.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Token is missing");
         }
         
-        // Find the user by token
         Optional<User> optionalUser = userService.getUserByToken(token);
         if(optionalUser.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token: User not found");
@@ -105,10 +103,8 @@ public class UserController {
         
         User user = optionalUser.get();
         
-        // Update user status to OFFLINE
         user = userService.updateUserStatus(user, UserStatus.OFFLINE);
         
-        // Return the updated user
         return DTOMapper.INSTANCE.convertEntityToUserGetDTO(user);
     }
 
