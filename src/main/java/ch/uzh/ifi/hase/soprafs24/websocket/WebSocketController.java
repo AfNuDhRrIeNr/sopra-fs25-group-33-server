@@ -219,48 +219,46 @@ public class WebSocketController {
                 return null;
             }
         }
-        else if (gameState.getAction().equals("GIVE_UP")) {
+        else if (gameState.getAction().equals("GAME_END")) {
             try {
-                logger.info("Player {} is giving up in game {}", gameState.getPlayerId(), gameId);
-
+                logger.info("Game {} is ending. Triggered by player {}", gameId, gameState.getPlayerId());
+        
                 Game game = gameRepository.findById(Long.valueOf(gameId))
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found"));
-
-                game.getUsers().removeIf(user -> user.getId().equals(gameState.getPlayerId()));
-
-                if (game.getUsers().isEmpty()) {
-                    game.setGameStatus(GameStatus.TERMINATED);
-                }
-                gameRepository.save(game);
-
-                simpleMessagingTemplate.convertAndSend(
-                    "/topic/game_states/" + gameId,
-                    new MessageGameStateMessageDTO(
-                        Long.valueOf(gameId),
-                        MessageStatus.SUCCESS,
-                        "Player " + gameState.getPlayerId() + " has given up.",
-                        gameState
-                    )
-                );
         
-                logger.info("Player {} has successfully given up in game {}", gameState.getPlayerId(), gameId);
+                game.setGameStatus(GameStatus.TERMINATED);
+                gameRepository.save(game);
+        
+                game.getUsers().forEach(user -> {
+                    simpleMessagingTemplate.convertAndSend(
+                        "/topic/game_states/users/" + user.getId(),
+                        new MessageGameStateMessageDTO(
+                            Long.valueOf(gameId),
+                            MessageStatus.SUCCESS,
+                            "The game has ended.",
+                            gameState
+                        )
+                    );
+                });
+        
+                logger.info("Game {} has been successfully terminated.", gameId);
         
                 return new MessageGameStateMessageDTO(
                     Long.valueOf(gameId),
                     MessageStatus.SUCCESS,
-                    "Player " + gameState.getPlayerId() + " has given up.",
+                    "Game has been terminated successfully.",
                     gameState
                 );
             } catch (ResponseStatusException e) {
-                logger.error("Error processing give-up action: {}", e.getReason());
+                logger.error("Error processing game end action: {}", e.getReason());
                 return new MessageGameStateMessageDTO(
                     Long.valueOf(gameId),
                     MessageStatus.ERROR,
-                    "Error giving up: " + e.getMessage(),
+                    "Error ending game: " + e.getMessage(),
                     gameState
                 );
             } catch (Exception e) {
-                logger.error("Unexpected error during give-up: {}", e.getMessage());
+                logger.error("Unexpected error during game end: {}", e.getMessage());
                 return new MessageGameStateMessageDTO(
                     Long.valueOf(gameId),
                     MessageStatus.ERROR,
