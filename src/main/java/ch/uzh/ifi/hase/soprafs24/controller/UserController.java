@@ -1,5 +1,6 @@
 package ch.uzh.ifi.hase.soprafs24.controller;
 
+import ch.uzh.ifi.hase.soprafs24.constant.UserStatus;
 import ch.uzh.ifi.hase.soprafs24.constant.errors.FriendRequestNotFoundException;
 import ch.uzh.ifi.hase.soprafs24.constant.errors.UserNotFoundException;
 import ch.uzh.ifi.hase.soprafs24.entity.FriendRequest;
@@ -86,6 +87,26 @@ public class UserController {
       // Return authenticated user
       return DTOMapper.INSTANCE.convertEntityToUserGetDTO(authenticatedUser);
   }
+
+    @PutMapping("/users/logout")
+    @ResponseStatus(HttpStatus.OK)
+    @ResponseBody
+    public UserGetDTO logoutUser(@RequestHeader("Authorization") String token) {
+        if(token == null || token.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Token is missing");
+        }
+        
+        Optional<User> optionalUser = userService.getUserByToken(token);
+        if(optionalUser.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token: User not found");
+        }
+        
+        User user = optionalUser.get();
+        
+        user = userService.updateUserStatus(user, UserStatus.OFFLINE);
+        
+        return DTOMapper.INSTANCE.convertEntityToUserGetDTO(user);
+    }
 
   // ------------------------------------------ FRIEND REQUESTS -------------------------------------------
 
