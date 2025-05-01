@@ -40,7 +40,7 @@ public interface DTOMapper {
   @Mapping(source = "token", target = "token")
   @Mapping(source = "inGame", target = "inGame")
   @Mapping(source = "highScore", target = "highScore")
-  @Mapping(source = "friends", target = "friends", qualifiedByName = "convertFriendsToUserGetDTO")
+  @Mapping(source = "friends", target = "friends", qualifiedByName = "convertFriendsToUserGetDTOWithoutFriends")
   UserGetDTO convertEntityToUserGetDTO(User user);
 
 
@@ -74,9 +74,16 @@ public interface DTOMapper {
     @Mapping(source = "message", target = "message")
     FriendRequestGetDTO convertEntityToFriendRequestGetDTO(FriendRequest friendRequest);
 
-    default String[] convertFriendsToUserGetDTOWithoutFriends(List<User> friends) {
-           return friends.stream()
-                .map(User::getUsername)
-                .toArray(String[]::new);
-    }
+    default FriendDTO[] convertFriendsToUserGetDTOWithoutFriends(List<User> friends) {
+      if (friends == null) return new FriendDTO[0];
+      
+      return friends.stream()
+          .map(friend -> {
+              FriendDTO friendDTO = new FriendDTO();
+              friendDTO.setId(friend.getId());
+              friendDTO.setUsername(friend.getUsername());
+              return friendDTO;
+          })
+         .toArray(FriendDTO[]::new);
+  }
 }
