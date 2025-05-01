@@ -9,6 +9,7 @@ import ch.uzh.ifi.hase.soprafs24.service.MoveSubmitService;
 import ch.uzh.ifi.hase.soprafs24.repository.GameRepository;
 import ch.uzh.ifi.hase.soprafs24.service.GameService;
 import ch.uzh.ifi.hase.soprafs24.entity.Game;
+import ch.uzh.ifi.hase.soprafs24.entity.User;
 import java.util.List;
 import java.util.Random;
 import java.util.Arrays;
@@ -219,28 +220,49 @@ public class WebSocketController {
                 return null;
             }
         }
-        else if (gameState.getAction().equals("GAME_END")) {
+        else if (gameState.getAction().equals("GAME_END") || gameState.getAction().equals("SURRENDER")) {
             try {
                 logger.info("Game {} is ending. Triggered by player {}", gameId, gameState.getPlayerId());
         
                 Game game = gameRepository.findById(Long.valueOf(gameId))
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found"));
-        
+                
+                List<User> users = game.getUsers();
+
+                for (User user : users) {
+                    Integer playerScore = game.getPlayerScores().get(user.getId());
+                    if (playerScore != null && user.getHighScore() < playerScore) {
+                        user.setHighScore(playerScore);
+                    }
+                    user.setInGame(false);
+                }
                 game.setGameStatus(GameStatus.TERMINATED);
                 gameRepository.save(game);
         
                 logger.info("Game {} has been successfully terminated.", gameId);
 
-        
-                simpleMessagingTemplate.convertAndSend(
-                    "/topic/game_states/" + gameId,
-                    new MessageGameStateMessageDTO(
-                        Long.valueOf(gameId),
-                        MessageStatus.SUCCESS,
-                        "The game has ended.",
-                        gameState
-                    )
-                );
+                if (gameState.getAction().equals("SURRENDER")) {
+                    gameState.setSurrenderedPlayerId(gameState.getPlayerId());
+                    simpleMessagingTemplate.convertAndSend(
+                        "/topic/game_states/" + gameId,
+                        new MessageGameStateMessageDTO(
+                            Long.valueOf(gameId),
+                            MessageStatus.SUCCESS,
+                            "Player " + gameState.getPlayerId() + " has surrendered.",
+                            gameState
+                        )
+                    );
+                } else {
+                    simpleMessagingTemplate.convertAndSend(
+                        "/topic/game_states/" + gameId,
+                        new MessageGameStateMessageDTO(
+                            Long.valueOf(gameId),
+                            MessageStatus.SUCCESS,
+                            "The game has ended.",
+                            gameState
+                        )
+                    );
+                }
 
                 return null;
             } catch (ResponseStatusException e) {
