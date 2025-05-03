@@ -282,6 +282,62 @@ public class WebSocketController {
                     gameState
                 );
             }
+        } else if (gameState.getAction().equals("VOTE") || gameState.getAction().equals("NO_VOTE")) {
+            try {
+                logger.info("Inside Vote handler for game: '{}'", gameId);
+        
+                Game game = gameRepository.findById(Long.valueOf(gameId))
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found"));
+                
+                List<User> users = game.getUsers();
+
+                Long senderId = gameState.getPlayerId();
+                User otherUser = users.stream()
+                    .filter(user -> !user.getId().equals(senderId)) // Exclude the sender
+                    .findFirst()
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Other user not found in the game"));
+
+                if (gameState.getAction().equals("VOTE")) {
+                    simpleMessagingTemplate.convertAndSend(
+                    "/topic/game_states/users/" + otherUser.getId(),
+                    new MessageGameStateMessageDTO(
+                        Long.valueOf(gameId),
+                        MessageStatus.SUCCESS,
+                        "Player " + senderId + " has started a game end vote.",
+                        gameState
+                    )
+                );
+                } else {
+                    simpleMessagingTemplate.convertAndSend(
+                    "/topic/game_states/users/" + otherUser.getId(),
+                    new MessageGameStateMessageDTO(
+                        Long.valueOf(gameId),
+                        MessageStatus.SUCCESS,
+                        "Player " + senderId + " declined.",
+                        gameState
+                    )
+                );
+                }
+                
+
+                return null;
+            } catch (ResponseStatusException e) {
+                logger.error("Error processing game start action: {}", e.getReason());
+                return new MessageGameStateMessageDTO(
+                    Long.valueOf(gameId),
+                    MessageStatus.ERROR,
+                    "Error starting game: " + e.getMessage(),
+                    gameState
+                );
+            } catch (Exception e) {
+                logger.error("Unexpected error during game start: {}", e.getMessage());
+                return new MessageGameStateMessageDTO(
+                    Long.valueOf(gameId),
+                    MessageStatus.ERROR,
+                    "Unexpected error: " + e.getMessage(),
+                    gameState
+                );
+            }
         }
         else {
             return null;
