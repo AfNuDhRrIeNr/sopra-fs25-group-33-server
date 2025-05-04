@@ -104,13 +104,12 @@ public class MoveSubmitService {
                 } else if (BoardStatus.TRIPLE_LETTER.equals(multiplier)) {
                     letterScore *= 3;
                 }
+                else if (BoardStatus.DOUBLE_WORD.equals(multiplier)) {
+                    wordMultiplier *= 2;
+                } else if (BoardStatus.TRIPLE_WORD.equals(multiplier)) {
+                    wordMultiplier *= 3;
+                }
             } 
-            
-            if (BoardStatus.DOUBLE_WORD.equals(multiplier)) {
-                wordMultiplier *= 2;
-            } else if (BoardStatus.TRIPLE_WORD.equals(multiplier)) {
-                wordMultiplier *= 3;
-            }
         
             // Add the letter score to the word score
             wordScore += letterScore;
