@@ -21,6 +21,7 @@ public class GameStateDTO {
     private String action;
     private Long playerId;
     private Map<Long, Integer> playerScores;
+    private Long surrenderedPlayerId;
 
     public boolean isValid() {
         if(this.id == null) throw new IllegalArgumentException("ID is missing");
@@ -87,5 +88,13 @@ public class GameStateDTO {
 
     public void setPlayerScores(Map<Long, Integer> playerScores) {
         this.playerScores = playerScores;
+    }
+
+    public Long getSurrenderedPlayerId() {
+        return surrenderedPlayerId;
+    }
+
+    public void setSurrenderedPlayerId(Long surrenderedPlayerId) {
+        this.surrenderedPlayerId = surrenderedPlayerId;
     }
 }
