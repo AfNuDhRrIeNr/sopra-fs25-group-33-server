@@ -80,8 +80,8 @@ public interface DTOMapper {
       return friends.stream()
           .map(friend -> {
               FriendDTO friendDTO = new FriendDTO();
-              friendDTO.setId(friend.getId());
               friendDTO.setUsername(friend.getUsername());
+              friendDTO.setStatus(friend.getStatus());
               return friendDTO;
           })
          .toArray(FriendDTO[]::new);
