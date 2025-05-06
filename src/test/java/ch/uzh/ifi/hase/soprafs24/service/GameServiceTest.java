@@ -145,7 +145,6 @@ public class GameServiceTest {
     
     Game game = new Game();
     game.setId(1L);
-    gameInvitationRepository.deleteByGame(game);
     gameService.deleteGame(game);
 
     verify(gameRepository, times(1)).delete(game);
