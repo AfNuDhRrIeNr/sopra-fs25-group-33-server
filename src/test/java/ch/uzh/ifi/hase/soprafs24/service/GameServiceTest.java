@@ -147,11 +147,16 @@ public class GameServiceTest {
         when(gameRepository.saveAndFlush(testGame)).thenReturn(testGame);
 
         // Act
-        List<Character> assignedLetters = gameService.assignLetters(testGame, 3, testHost.getId());
+        List<Character> assignedLetters = gameService.assignLetters(testGame, 3, testHost.getId(), new String[]{"A", "B", "C","D"});
 
         // Assert
         assertNotNull(assignedLetters);
-        assertEquals(3, assignedLetters.size());
+        assertEquals(7, assignedLetters.size());
+        assertTrue(assignedLetters.contains('A'));
+        assertTrue(assignedLetters.contains('B'));
+        assertTrue(assignedLetters.contains('C'));
+        assertTrue(assignedLetters.contains('D'));
+
     }
 
 }
