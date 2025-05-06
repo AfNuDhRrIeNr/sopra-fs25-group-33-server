@@ -140,4 +140,15 @@ public class GameServiceTest {
         verify(gameRepository, times(1)).findById(testGame.getId());
     }
 
+    @Test
+    public void deleteGame_validGame_gameDeleted() {
+    
+    Game game = new Game();
+    game.setId(1L);
+    gameInvitationRepository.deleteByGame(game);
+    gameService.deleteGame(game);
+
+    verify(gameRepository, times(1)).delete(game);
+}
+
 }

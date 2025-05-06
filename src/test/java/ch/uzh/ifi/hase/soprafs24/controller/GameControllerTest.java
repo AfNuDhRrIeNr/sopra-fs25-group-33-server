@@ -30,7 +30,8 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Optional;
-
+import java.util.List;
+import java.util.ArrayList;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -237,6 +238,71 @@ public class GameControllerTest {
                         .content(new ObjectMapper().writeValueAsString(dto)))
                 .andExpect(status().isConflict());
     }
+
+    @Test
+    void deleteGame_validRequest_gameDeleted() throws Exception {
+    
+    Game game = new Game();
+    game.setId(1L);
+    game.setUsers(new ArrayList<>());
+
+    User user = new User();
+    user.setId(12345L);
+
+    given(userService.getUserByToken("test-token")).willReturn(Optional.of(user));
+    given(gameService.getGameById(1L)).willReturn(Optional.of(game));
+
+    mockMvc.perform(delete("/games/1")
+            .header("Authorization", "test-token"))
+        .andExpect(status().isNoContent());
+
+    Mockito.verify(gameService).deleteGame(game);
+}
+
+@Test
+void deleteGame_gameNotFound_returnsNotFound() throws Exception {
+    
+    given(userService.getUserByToken("test-token")).willReturn(Optional.of(new User()));
+    given(gameService.getGameById(1L)).willReturn(Optional.empty());
+
+    mockMvc.perform(delete("/games/1")
+            .header("Authorization", "test-token"))
+        .andExpect(status().isNotFound());
+}
+
+@Test
+void deleteGame_usersInGame_returnsConflict() throws Exception {
+    
+    Game game = new Game();
+    game.setId(1L);
+
+    User user1 = new User();
+    user1.setId(12345L);
+    User user2 = new User();
+    user2.setId(67890L);
+
+    List<User> users = new ArrayList<>();
+    users.add(user1);
+    users.add(user2);
+    game.setUsers(users); 
+
+    given(userService.getUserByToken("test-token")).willReturn(Optional.of(user1));
+    given(gameService.getGameById(1L)).willReturn(Optional.of(game));
+
+    mockMvc.perform(delete("/games/1")
+            .header("Authorization", "test-token"))
+        .andExpect(status().isConflict());
+}
+
+@Test
+void deleteGame_invalidToken_returnsUnauthorized() throws Exception {
+    
+    given(userService.getUserByToken("invalid-token")).willReturn(Optional.empty());
+
+    mockMvc.perform(delete("/games/1")
+            .header("Authorization", "invalid-token"))
+        .andExpect(status().isUnauthorized());
+}
 
 
     private String asJsonString(final Object object) {
