@@ -101,4 +101,8 @@ public class GameService {
         int letterCount = game.getRemainingLetterCount(letter);
         return letterCount;
     }
+
+    public void deleteGame(Game game) {
+        gameRepository.delete(game);
+    }
 }
