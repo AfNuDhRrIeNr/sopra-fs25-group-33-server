@@ -52,7 +52,7 @@ public class GameService {
     public Game joinGame(Game game, User user) throws GameNotFoundException, UserNotFoundException {
         if(game == null || game.getId() == null ||gameRepository.findById(game.getId()).isEmpty()) throw new GameNotFoundException("Game not found");
         if(user == null || user.getId() == null ||userRepository.findById(user.getId()).isEmpty()) throw new UserNotFoundException("User not found");
-        game.addUser(user);
+        if(!game.getUsers().contains(user)) game.addUser(user);
         return gameRepository.saveAndFlush(game);
     }
 
@@ -91,13 +91,17 @@ public class GameService {
         return exchangedTiles;
     }
 
-    public List<Character> assignLetters(Game game, int count, Long userId) {
+    public List<Character> assignLetters(Game game, int count, Long userId, String[] tilesLeftInHand) {
+        if(count + tilesLeftInHand.length != 7) throw new IllegalArgumentException("You can only have exactly 7 tiles in hand");
         List<Character> tilesToExchange = new ArrayList<>();
         for(int i = 0; i< count; i++) tilesToExchange.add(' ');
         List<Character> newTiles = game.exchangeTiles(tilesToExchange);
-        List<String> allNewTiles = new ArrayList<>();
+        List<String> allNewTiles = new ArrayList<>(Arrays.stream(tilesLeftInHand).toList());
         for (char tile : newTiles) {
             allNewTiles.add(String.valueOf(tile));
+        }
+        for(String tile: tilesLeftInHand) {
+            newTiles.add(tile.charAt(0));
         }
         game.setTilesForPlayer(userId, allNewTiles);
         gameRepository.saveAndFlush(game);
@@ -120,5 +124,12 @@ public class GameService {
     public int countLettersInBag (Game game, Character letter) {
         int letterCount = game.getRemainingLetterCount(letter);
         return letterCount;
+    }
+
+    public User changeUserTurn(Game game) {
+        game = gameRepository.findByIdWithUsers(game.getId()).get();
+        game.setHostTurn(!game.isHostTurn());
+        gameRepository.saveAndFlush(game);
+        return game.isHostTurn() ? game.getHost() : game.getUsers().get(1);
     }
 }

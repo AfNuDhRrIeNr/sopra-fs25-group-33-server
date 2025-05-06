@@ -17,7 +17,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
-import java.util.List;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -96,7 +95,7 @@ public class GameController {
     public GamePutDTO assignTiles(@PathVariable Long id, @PathVariable Long userId, @RequestParam int count) {
         Game game = gameService.getGameById(id)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found"));
-        List<Character> newTiles = gameService.assignLetters(game, count, userId);
+        List<Character> newTiles = gameService.assignLetters(game, count, userId, new String[0]);
         GamePutDTO response = new GamePutDTO();
         response.setNewTiles(newTiles);
         return response;
