@@ -64,8 +64,8 @@ public class Game implements Serializable {
     private Map<Long, List<String>> playerTilesList = new HashMap<>();
 
     public String[] getPlayerTiles(Long userId) {
-        if(!playerTilesList.containsKey(userId)) throw new IllegalArgumentException("User id not found!");
-        return playerTiles.get(userId).split("");
+        String tiles = playerTiles.get(userId);
+        return tiles==null ? new String[0]: tiles.split("");
     }
 
     public void setTilesForPlayer(Long userId, List<String> tiles) {

@@ -24,6 +24,7 @@ public class GlobalExceptionAdvice extends ResponseEntityExceptionHandler {
   @ExceptionHandler(value = { IllegalArgumentException.class, IllegalStateException.class })
   protected ResponseEntity<Object> handleConflict(RuntimeException ex, WebRequest request) {
     String bodyOfResponse = "This should be application specific";
+    log.error("Request: {} raised {}", request.getDescription(false), ex);
     return handleExceptionInternal(ex, bodyOfResponse, new HttpHeaders(), HttpStatus.CONFLICT, request);
   }
 

@@ -225,7 +225,7 @@ public class WebSocketController {
                 return null;
             }
         }
-        else if (gameState.getAction().equals("FETCH_GAMESTATE")) {
+        else if (gameState.getAction().equals("FETCH_GAME_STATE")) {
             Optional<Game> gameOptional = gameService.getGameById(Long.valueOf(gameId));
             if(gameOptional.isEmpty()) {
                 logger.error("Error while fetching game state. Game was not found.");
@@ -236,13 +236,15 @@ public class WebSocketController {
                         gameState
                 );
             }
+            Long senderId = gameState.getPlayerId();
             Game game = gameOptional.get();
             gameState.setBoard(game.getBoard());
             gameState.setUserTiles(game.getPlayerTiles(gameState.getPlayerId()));
             gameState.setPlayerScores(game.getPlayerScores());
-            gameState.setAction("FETCH_GAMESTATE");
+            gameState.setAction("FETCH_GAME_STATE");
+            gameState.setPlayerId(game.isHostTurn() ? game.getHost().getId() : game.getUsers().get(1).getId());
             simpleMessagingTemplate.convertAndSend(
-                    "/topic/game_states/users/" + gameState.getPlayerId(),
+                    "/topic/game_states/users/" + senderId,
                     new MessageGameStateMessageDTO(
                             Long.valueOf(gameId),
                             MessageStatus.SUCCESS,

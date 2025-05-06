@@ -76,12 +76,14 @@ public class GameService {
         List<Character> exchangedTiles = game.exchangeTiles(tilesToExchange);
 
         // Corrected conversion from array to list
-        List<String> allNewTiles = new ArrayList<>(Arrays.asList(game.getPlayerTiles(userId)));
+        String[] playerTiles = game.getPlayerTiles(userId);
+        List<String> allNewTiles = new ArrayList<>(Arrays.asList(playerTiles));
+
 
         for (int i = 0; i < tilesToExchange.size(); i++) {
             Character oldTile = tilesToExchange.get(i);
-            allNewTiles.remove(oldTile.toString());
-            allNewTiles.add(exchangedTiles.get(i).toString());
+            int j = allNewTiles.indexOf(String.valueOf(oldTile));
+            allNewTiles.add(j, String.valueOf(exchangedTiles.get(i)));
         }
 
         game.setTilesForPlayer(userId, allNewTiles);
