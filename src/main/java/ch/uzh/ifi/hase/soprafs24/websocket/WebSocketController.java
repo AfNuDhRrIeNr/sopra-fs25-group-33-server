@@ -13,7 +13,7 @@ import ch.uzh.ifi.hase.soprafs24.entity.User;
 import java.util.List;
 import java.util.Random;
 import java.util.Arrays;
-
+import java.time.LocalDateTime;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -66,6 +66,13 @@ public class WebSocketController {
         if(gameState.getId() != Long.valueOf(gameId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,"The game id of the object and destination are not equal!");
         }
+        Game game = gameRepository.findById(Long.valueOf(gameId))
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found"));
+        if (game.getStartTime() == null) {
+            game.setStartTime(LocalDateTime.now());
+            gameRepository.save(game);
+            logger.info("Game {} started. Start time set to {}", gameId, game.getStartTime());
+        }
 
         // Check if it's a validation request
         if (gameState.getAction().equals("VALIDATE")) {
@@ -116,8 +123,8 @@ public class WebSocketController {
                 int score = moveSubmitService.submitMove(Long.valueOf(gameId), gameState.getBoard());
                 
                 // 2. Update the player's score
-                Game game = gameRepository.findById(Long.valueOf(gameId))
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found"));
+                // Game game = gameRepository.findById(Long.valueOf(gameId))
+                //     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found"));
                 
                 game.getPlayerScores();
                 game.addScore(gameState.getPlayerId(), score);
@@ -224,8 +231,8 @@ public class WebSocketController {
             try {
                 logger.info("Game {} is ending. Triggered by player {}", gameId, gameState.getPlayerId());
         
-                Game game = gameRepository.findById(Long.valueOf(gameId))
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found"));
+                // Game game = gameRepository.findById(Long.valueOf(gameId))
+                //     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found"));
                 
                 List<User> users = game.getUsers();
 
@@ -286,8 +293,8 @@ public class WebSocketController {
             try {
                 logger.info("Inside Vote handler for game: '{}'", gameId);
 
-                Game game = gameRepository.findById(Long.valueOf(gameId))
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found"));
+                // Game game = gameRepository.findById(Long.valueOf(gameId))
+                //     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found"));
 
                 List<User> users = game.getUsers();
 
@@ -335,6 +342,54 @@ public class WebSocketController {
                     Long.valueOf(gameId),
                     MessageStatus.ERROR,
                     "Unexpected error: " + e.getMessage(),
+                    gameState
+                );
+            }
+        } else if (gameState.getAction().equals("TIMER")) {
+            try {
+                
+                // Game game = gameRepository.findById(Long.valueOf(gameId))
+                //     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found"));
+        
+                LocalDateTime now = LocalDateTime.now();
+                long elapsedMinutes = java.time.Duration.between(game.getStartTime(), now).toMinutes();
+                long remainingMinutes = 45 - elapsedMinutes;
+        
+                // if (remainingMinutes <= 0) {
+                    
+                //    game.setGameStatus(GameStatus.TERMINATED);
+                //    gameRepository.save(game);
+        
+                //     simpleMessagingTemplate.convertAndSend(
+                //         "/topic/game_states/" + gameId,
+                //         new MessageGameStateMessageDTO(
+                //             Long.valueOf(gameId),
+                //             MessageStatus.SUCCESS,
+                //             "Time is up! The game has ended.",
+                //             gameState
+                //         )
+                //     );
+                //     return null;
+                // }
+        
+                gameState.setRemainingTime(remainingMinutes);
+                simpleMessagingTemplate.convertAndSend(
+                    "/topic/game_states/" + gameId,
+                    new MessageGameStateMessageDTO(
+                        Long.valueOf(gameId),
+                        MessageStatus.SUCCESS,
+                        "Timer synchronized. Remaining time: " + remainingMinutes + " minutes.",
+                        gameState
+                    )
+                );
+        
+                return null;
+            } catch (ResponseStatusException e) {
+                logger.error("Error during timer synchronization: {}", e.getReason());
+                return new MessageGameStateMessageDTO(
+                    Long.valueOf(gameId),
+                    MessageStatus.ERROR,
+                    "Error during timer synchronization: " + e.getMessage(),
                     gameState
                 );
             }
