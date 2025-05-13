@@ -13,7 +13,7 @@ import ch.uzh.ifi.hase.soprafs24.entity.User;
 import java.util.List;
 import java.util.Random;
 import java.util.Arrays;
-
+import java.time.LocalDateTime;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -335,6 +335,37 @@ public class WebSocketController {
                     Long.valueOf(gameId),
                     MessageStatus.ERROR,
                     "Unexpected error: " + e.getMessage(),
+                    gameState
+                );
+            }
+        } else if (gameState.getAction().equals("TIMER")) {
+            try {
+                
+                Game game = gameRepository.findById(Long.valueOf(gameId))
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found"));
+
+                LocalDateTime now = LocalDateTime.now();
+                long elapsedSeconds = java.time.Duration.between(game.getStartTime(), now).toSeconds();
+                long remainingSeconds = 45 * 60 - elapsedSeconds;
+              
+                gameState.setRemainingTime(remainingSeconds);
+                simpleMessagingTemplate.convertAndSend(
+                    "/topic/game_states/" + gameId,
+                    new MessageGameStateMessageDTO(
+                        Long.valueOf(gameId),
+                        MessageStatus.SUCCESS,
+                        "Timer synchronized. Remaining time: " + remainingSeconds + " minutes.",
+                        gameState
+                    )
+                );
+        
+                return null;
+            } catch (ResponseStatusException e) {
+                logger.error("Error during timer synchronization: {}", e.getReason());
+                return new MessageGameStateMessageDTO(
+                    Long.valueOf(gameId),
+                    MessageStatus.ERROR,
+                    "Error during timer synchronization: " + e.getMessage(),
                     gameState
                 );
             }
