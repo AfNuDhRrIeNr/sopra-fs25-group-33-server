@@ -108,19 +108,16 @@ public class GameService {
         gameRepository.delete(game);
     }
 
-    public Game setGameStartTime(Long gameId) {
-        Game game = gameRepository.findById(gameId)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found"));
+    public void setGameStartTime(Game game) {
 
         if (game.getStartTime() == null) {
             game.setStartTime(LocalDateTime.now());
             gameRepository.save(game);
-            log.info("Game {} started. Start time set to {}", gameId, game.getStartTime());
+            log.info("Game started. Start time set to {}", game.getStartTime());
         } else {
-            log.info("Game {} already has a start time: {}", gameId, game.getStartTime());
+            log.info("Game already has a start time: {}", game.getStartTime());
         }
 
-        return game;
     }
 
 }

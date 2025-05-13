@@ -76,6 +76,8 @@ public class GameController {
         if (gameOptional.isEmpty()) { return ResponseEntity.notFound().build(); }
         Game game = gameOptional.get();
 
+        gameService.setGameStartTime(game);
+
         if (!gameService.isUserInGame(game,user)) { return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build(); }
 
         if (gamePutDTO.getGameStatus() != null)
@@ -206,13 +208,6 @@ public class GameController {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred:\n" + e.getMessage());
         }
         return ResponseEntity.ok(DTOMapper.INSTANCE.convertEntityToGameInvitationsGetDTO(gameInvitationService.getGameInvitationById(Long.valueOf(invitationId))));
-    }
-
-    @PutMapping("/games/{gameId}/startTime")
-    public ResponseEntity<Game> setGameStartTime(@PathVariable Long gameId) {
-        Game updatedGame = gameService.setGameStartTime(gameId);
-        updatedGame1 = gameDTOMapper.INSTANCE.convertEntityToGameGetDTO(updatedGame);
-        return ResponseEntity.ok(updatedGame1);
     }
 
 }
