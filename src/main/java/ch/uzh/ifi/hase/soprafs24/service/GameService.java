@@ -95,7 +95,7 @@ public class GameService {
     }
 
     public List<Character> assignLetters(Game game, int count, Long userId, String[] tilesLeftInHand) {
-        if(count + tilesLeftInHand.length > 7) throw new IllegalArgumentException("You can only have at most 7 tiles in hand");
+        if(count > 7 || tilesLeftInHand.length > 7) throw new IllegalArgumentException("You can only have at most 7 tiles in hand");
         List<Character> tilesToExchange = new ArrayList<>();
         for(int i = 0; i < tilesLeftInHand.length; i++) tilesToExchange.add(tilesLeftInHand[i].charAt(0));
         while(tilesToExchange.size() < count) tilesToExchange.add(' ');

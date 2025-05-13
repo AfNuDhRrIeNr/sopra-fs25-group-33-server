@@ -157,18 +157,31 @@ public class GameServiceTest {
         // Arrange
         when(gameRepository.findById(testGame.getId())).thenReturn(Optional.of(testGame));
         when(gameRepository.saveAndFlush(testGame)).thenReturn(testGame);
+        testGame.setTilesForPlayer(testHost.getId(), List.of("A", "B", "C", "D","E"));
 
         // Act
-        List<Character> assignedLetters = gameService.assignLetters(testGame, 3, testHost.getId(), new String[]{"A", "B", "C","D"});
+        List<Character> assignedLetters = gameService.assignLetters(testGame, 4, testHost.getId(), new String[]{"A", "B", "C","D"});
 
         // Assert
         assertNotNull(assignedLetters);
-        assertEquals(7, assignedLetters.size());
-        assertTrue(assignedLetters.contains('A'));
-        assertTrue(assignedLetters.contains('B'));
-        assertTrue(assignedLetters.contains('C'));
-        assertTrue(assignedLetters.contains('D'));
+        assertEquals(5, assignedLetters.size());
+        assertTrue(assignedLetters.contains('E'));
 
+    }
+
+    @Test
+    void testAssignLettersOutOfBounds() {
+        // Arrange
+        when(gameRepository.findById(testGame.getId())).thenReturn(Optional.of(testGame));
+        when(gameRepository.saveAndFlush(testGame)).thenReturn(testGame);
+
+        // Act & Assert
+        assertThrows(IllegalArgumentException.class, () -> {
+            gameService.assignLetters(testGame, 8, testHost.getId(), new String[]{"A", "B", "C","D"});
+        });
+        assertThrows(IllegalArgumentException.class, () -> {
+            gameService.assignLetters(testGame, 4, testHost.getId(), new String[]{"A", "B", "C","D", "E", "F", "G", "H"});
+        });
     }
 
 }
