@@ -434,12 +434,10 @@ public class WebSocketController {
             );
         } catch (Exception e) {
             logger.info("Unexpected error: {}", e.getMessage());
-                );
-            } catch (Exception e) {
-                logger.info("Unexpected error: {}", e.getMessage());
-                return null;
-            }
+
         }
+        return null;
+    }
 
 
     private void handleValidate(String gameId, GameStateDTO gameState) {
