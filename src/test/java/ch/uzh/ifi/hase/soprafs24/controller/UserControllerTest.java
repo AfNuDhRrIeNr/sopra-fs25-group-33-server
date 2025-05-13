@@ -580,4 +580,35 @@ public class UserControllerTest {
                 .andExpect(status().isNotFound())
                 .andExpect(status().reason("Request not found"));
     }
+
+    @Test
+    public void logoutUser_validToken_setsUserOffline() throws Exception {
+        // given
+        User user = new User();
+        user.setId(1L);
+        user.setUsername("testUsername");
+        user.setStatus(UserStatus.ONLINE);
+        user.setToken("valid-token");
+        
+        User offlineUser = new User();
+        offlineUser.setId(1L);
+        offlineUser.setUsername("testUsername");
+        offlineUser.setStatus(UserStatus.OFFLINE);
+        offlineUser.setToken("valid-token");
+        
+        given(userService.getUserByToken("valid-token")).willReturn(Optional.of(user));
+        given(userService.updateUserStatus(user, UserStatus.OFFLINE)).willReturn(offlineUser);
+        
+        // when
+        MockHttpServletRequestBuilder putRequest = put("/users/logout")
+                .header("Authorization", "valid-token")
+                .contentType(MediaType.APPLICATION_JSON);
+        
+        // then
+        mockMvc.perform(putRequest)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id", is(user.getId().intValue())))
+                .andExpect(jsonPath("$.username", is(user.getUsername())))
+                .andExpect(jsonPath("$.status", is(UserStatus.OFFLINE.toString())));
+    }
 }

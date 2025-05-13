@@ -57,8 +57,12 @@ public class GameInvitationService {
         Game game = optionalGame.get();
         User sender = optionalSender.get();
         User target = optionalTarget.get();
-        if(gameInvitationRepository.findByGameAndTarget(game, target).isPresent()) throw new IllegalArgumentException("Game invitation already exists");
-
+        if(gameInvitationRepository.findByGameAndTarget(game, target).isPresent()) {
+            log.info("Game invitation already exists - overwriting existing invitation");
+            GameInvitation gameInvitation = gameInvitationRepository.findByGameAndTarget(game, target).get();
+            gameInvitation.setStatus(InvitationStatus.PENDING);
+            return gameInvitationRepository.saveAndFlush(gameInvitation);
+        }
 
         GameInvitation gameInvitation = new GameInvitation();
         gameInvitation.setGame(game);
@@ -72,6 +76,10 @@ public class GameInvitationService {
     public GameInvitation updateGameInvitationStatus(GameInvitation gameInvitation, InvitationStatus status) throws UserNotFoundException, GameNotFoundException {
         if(gameInvitation == null || gameInvitation.getId() == null) throw new IllegalArgumentException("Game invitation cannot be null");
         if(status == null) throw new IllegalArgumentException("Status cannot be null");
+        if(gameInvitation.getGame() == null || gameInvitation.getGame().getId() == null || gameService.getGameById(gameInvitation.getGame().getId()).isEmpty()) throw new GameNotFoundException("Game not found");
+        if(gameInvitation.getSender() == null || gameInvitation.getSender().getId() == null || userService.getUserById(gameInvitation.getSender().getId()).isEmpty()) throw new UserNotFoundException("Sender not found");
+        if(gameInvitation.getTarget() == null || gameInvitation.getTarget().getId() == null || userService.getUserById(gameInvitation.getTarget().getId()).isEmpty()) throw new UserNotFoundException("Target not found");
+        if(gameInvitation.getGame().getUsers().size() >= 2) throw new IllegalArgumentException("Game is already full");
         gameInvitation.setStatus(status);
         if(status==InvitationStatus.ACCEPTED) {
             userService.updateUserStatus(gameInvitation.getTarget(), UserStatus.IN_GAME);

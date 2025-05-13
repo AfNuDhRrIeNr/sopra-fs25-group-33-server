@@ -12,7 +12,7 @@ public class UserGetDTO {
 
   private int highScore;
 
-  private String[] friends;
+  private FriendDTO[] friends;
 
   public boolean isInGame() {
       return isInGame;
@@ -25,11 +25,11 @@ public class UserGetDTO {
   public int getHighScore() { return highScore; }
     public void setHighScore(int highScore) { this.highScore = highScore; }
 
-    public String[] getFriends() {
+    public FriendDTO[] getFriends() {
         return friends;
     }
 
-    public void setFriends(String[] friends) {
+    public void setFriends(FriendDTO[] friends) {
         this.friends = friends;
     }
 

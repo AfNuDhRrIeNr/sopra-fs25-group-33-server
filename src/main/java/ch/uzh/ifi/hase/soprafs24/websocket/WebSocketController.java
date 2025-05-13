@@ -5,11 +5,15 @@ import ch.uzh.ifi.hase.soprafs24.constant.errors.GameNotFoundException;
 import ch.uzh.ifi.hase.soprafs24.entity.Game;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
 import ch.uzh.ifi.hase.soprafs24.repository.GameRepository;
-import ch.uzh.ifi.hase.soprafs24.rest.dto.GameStateDTO;
+import ch.uzh.ifi.hase.soprafs24.constant.GameStatus;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.MessageGameStateMessageDTO;
+import ch.uzh.ifi.hase.soprafs24.rest.dto.GameStateDTO;
 import ch.uzh.ifi.hase.soprafs24.service.GameService;
 import ch.uzh.ifi.hase.soprafs24.service.MoveSubmitService;
 import ch.uzh.ifi.hase.soprafs24.service.MoveValidatorService;
+import java.util.List;
+import java.util.Arrays;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,9 +48,6 @@ public class WebSocketController {
 
     private static final Logger logger = LoggerFactory.getLogger(WebSocketController.class);
 
-
-
-
     // ------------------ Game State ---------------------------------------
     @MessageMapping("/game_states/{gameId}")
     @SendTo("/topic/game_states/{gameId}")
@@ -75,7 +76,7 @@ public class WebSocketController {
 
         else if (gameState.getAction().equals("SUBMIT")) {
             return handleSubmit(gameId, gameState);
-            
+
         }  else if (gameState.getAction().equals("SKIP")) {
             return handleSkip(gameId, gameState);
         } else if (gameState.getAction().equals("EXCHANGE")) {
@@ -83,6 +84,126 @@ public class WebSocketController {
         }
         else if (gameState.getAction().equals("FETCH_GAME_STATE")) {
             return handleFetchGameState(gameId, gameState);
+        }
+        else if (gameState.getAction().equals("GAME_END") || gameState.getAction().equals("SURRENDER")) {
+            try {
+                logger.info("Game {} is ending. Triggered by player {}", gameId, gameState.getPlayerId());
+
+                Game game = gameRepository.findById(Long.valueOf(gameId))
+                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found"));
+
+                List<User> users = game.getUsers();
+
+                for (User user : users) {
+                    Integer playerScore = game.getPlayerScores().get(user.getId());
+                    if (playerScore != null && user.getHighScore() < playerScore) {
+                        user.setHighScore(playerScore);
+                    }
+                    user.setInGame(false);
+                }
+                game.setGameStatus(GameStatus.TERMINATED);
+                gameRepository.save(game);
+
+                logger.info("Game {} has been successfully terminated.", gameId);
+
+                if (gameState.getAction().equals("SURRENDER")) {
+                    gameState.setSurrenderedPlayerId(gameState.getPlayerId());
+                    simpleMessagingTemplate.convertAndSend(
+                            "/topic/game_states/" + gameId,
+                            new MessageGameStateMessageDTO(
+                                    Long.valueOf(gameId),
+                                    MessageStatus.SUCCESS,
+                                    "Player " + gameState.getPlayerId() + " has surrendered.",
+                                    gameState
+                            )
+                    );
+                } else {
+                    simpleMessagingTemplate.convertAndSend(
+                            "/topic/game_states/" + gameId,
+                            new MessageGameStateMessageDTO(
+                                    Long.valueOf(gameId),
+                                    MessageStatus.SUCCESS,
+                                    "The game has ended.",
+                                    gameState
+                            )
+                    );
+                }
+
+                return null;
+            } catch (ResponseStatusException e) {
+                logger.error("Error processing game end action: {}", e.getReason());
+                return new MessageGameStateMessageDTO(
+                        Long.valueOf(gameId),
+                        MessageStatus.ERROR,
+                        "Error ending game: " + e.getMessage(),
+                        gameState
+                );
+            } catch (Exception e) {
+                logger.error("Unexpected error during game end: {}", e.getMessage());
+                return new MessageGameStateMessageDTO(
+                        Long.valueOf(gameId),
+                        MessageStatus.ERROR,
+                        "Unexpected error: " + e.getMessage(),
+                        gameState
+                );
+            }
+        }else if (gameState.getAction().equals("VOTE") || gameState.getAction().equals("NO_VOTE")) {
+            try {
+                logger.info("Inside Vote handler for game: '{}'", gameId);
+
+                Game game = gameRepository.findById(Long.valueOf(gameId))
+                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found"));
+
+                List<User> users = game.getUsers();
+
+                Long senderId = gameState.getPlayerId();
+                User otherUser = users.stream()
+                        .filter(user -> !user.getId().equals(senderId)) // Exclude the sender
+                        .findFirst()
+                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Other user not found in the game"));
+
+                if (gameState.getAction().equals("VOTE")) {
+                    simpleMessagingTemplate.convertAndSend(
+                            "/topic/game_states/users/" + otherUser.getId(),
+                            new MessageGameStateMessageDTO(
+                                    Long.valueOf(gameId),
+                                    MessageStatus.SUCCESS,
+                                    "Player " + senderId + " has started a game end vote.",
+                                    gameState
+                            )
+                    );
+                } else {
+                    simpleMessagingTemplate.convertAndSend(
+                            "/topic/game_states/users/" + otherUser.getId(),
+                            new MessageGameStateMessageDTO(
+                                    Long.valueOf(gameId),
+                                    MessageStatus.SUCCESS,
+                                    "Player " + senderId + " declined.",
+                                    gameState
+                            )
+                    );
+                }
+
+
+                return null;
+            } catch (ResponseStatusException e) {
+                logger.error("Error processing game start action: {}", e.getReason());
+                return new MessageGameStateMessageDTO(
+                        Long.valueOf(gameId),
+                        MessageStatus.ERROR,
+                        "Error starting game: " + e.getMessage(),
+                        gameState
+                );
+            } catch (Exception e) {
+                logger.error("Unexpected error during game start: {}", e.getMessage());
+                return new MessageGameStateMessageDTO(
+                        Long.valueOf(gameId),
+                        MessageStatus.ERROR,
+                        "Unexpected error: " + e.getMessage(),
+                        gameState
+                );
+            }
+
         }
         else {
             logger.error("Unknown action: {}", gameState.getAction());
@@ -313,9 +434,13 @@ public class WebSocketController {
             );
         } catch (Exception e) {
             logger.info("Unexpected error: {}", e.getMessage());
-            return null;
+                );
+            } catch (Exception e) {
+                logger.info("Unexpected error: {}", e.getMessage());
+                return null;
+            }
         }
-    }
+
 
     private void handleValidate(String gameId, GameStateDTO gameState) {
         try {

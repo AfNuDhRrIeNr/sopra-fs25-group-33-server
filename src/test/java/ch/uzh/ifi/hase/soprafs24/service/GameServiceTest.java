@@ -67,7 +67,9 @@ public class GameServiceTest {
         // Assert
         assertNotNull(createdGame);
         assertEquals(testGame.getId(), createdGame.getId());
-        assertEquals(testHost, createdGame.getHost());
+        assertEquals(testHost.getId(), createdGame.getHost().getId());
+        assertEquals(UserStatus.IN_GAME, createdGame.getHost().getStatus());
+        assertEquals(true, createdGame.getHost().isInGame());
         verify(gameRepository, times(1)).save(any(Game.class));
     }
 
@@ -139,6 +141,16 @@ public class GameServiceTest {
         assertTrue(gameService.getGameById(testGame.getId()).isEmpty());
         verify(gameRepository, times(1)).findById(testGame.getId());
     }
+
+    @Test
+    public void deleteGame_validGame_gameDeleted() {
+
+    Game game = new Game();
+    game.setId(1L);
+    gameService.deleteGame(game);
+
+    verify(gameRepository, times(1)).delete(game);
+}
 
     @Test
     void testAssignLetters() {

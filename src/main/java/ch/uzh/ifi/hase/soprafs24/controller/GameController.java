@@ -88,6 +88,23 @@ public class GameController {
         return ResponseEntity.ok(DTOMapper.INSTANCE.convertEntityToGameGetDTO(game));
     }
 
+    @ResponseStatus(HttpStatus.OK)
+    @DeleteMapping("/games/{id}")
+    public ResponseEntity<Void> deleteGame(@PathVariable Long id, @RequestHeader("Authorization") String token) {
+        Optional<User> optionalUser = userService.getUserByToken(token);
+        if (optionalUser.isEmpty()) { return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build(); }
+        
+        Game game = gameService.getGameById(id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found"));
+
+        if (!game.getUsers().isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Cannot delete game: Users are still in the game");
+        }
+        gameService.deleteGame(game);
+
+        return ResponseEntity.noContent().build();
+    }
+
 
 
     @ResponseStatus(HttpStatus.OK)
