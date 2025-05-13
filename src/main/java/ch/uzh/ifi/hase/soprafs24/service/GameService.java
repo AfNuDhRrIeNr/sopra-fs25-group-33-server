@@ -92,17 +92,33 @@ public class GameService {
     }
 
     public List<Character> assignLetters(Game game, int count, Long userId, String[] tilesLeftInHand) {
-        if(count + tilesLeftInHand.length != 7) throw new IllegalArgumentException("You can only have exactly 7 tiles in hand");
+        if(count + tilesLeftInHand.length > 7) throw new IllegalArgumentException("You can only have at most 7 tiles in hand");
         List<Character> tilesToExchange = new ArrayList<>();
-        for(int i = 0; i< count; i++) tilesToExchange.add(' ');
+        for(int i = 0; i < tilesLeftInHand.length; i++) tilesToExchange.add(tilesLeftInHand[i].charAt(0));
+        while(tilesToExchange.size() < count) tilesToExchange.add(' ');
         List<Character> newTiles = game.exchangeTiles(tilesToExchange);
-        List<String> allNewTiles = new ArrayList<>(Arrays.stream(tilesLeftInHand).toList());
+        List<String> allNewTiles = new ArrayList<>(Arrays.stream(game.getPlayerTiles(userId)).toList());
+        // Add newly drawn tiles to the list
         for (char tile : newTiles) {
             allNewTiles.add(String.valueOf(tile));
         }
+        // Remove tiles that were exchanged
         for(String tile: tilesLeftInHand) {
+            allNewTiles.remove(tile);
+        }
+        newTiles.clear();
+
+        // Add the new tiles to the list as chars
+        for(String tile: allNewTiles) {
             newTiles.add(tile.charAt(0));
         }
+
+        log.info("-------------------------------------------------");
+        log.info("New tiles: {}", newTiles);
+        log.info("All new tiles: {}", allNewTiles);
+        log.info("Tiles left in hand: {}", Arrays.toString(tilesLeftInHand));
+        log.info("Tiles to exchange: {}", tilesToExchange);
+        log.info("Tiles in hand: {}", game.getPlayerTiles(userId));
         game.setTilesForPlayer(userId, allNewTiles);
         gameRepository.saveAndFlush(game);
         return newTiles;
@@ -113,7 +129,7 @@ public class GameService {
         if (gameOptional.isPresent()) {
             Game game = gameOptional.get();
             game.setHostTurn(!game.getHost().getId().equals(playerId));
-            gameRepository.save(game);
+            gameRepository.saveAndFlush(game);
             return game.isHostTurn();
         } else {
             log.warn("Game with id {} not found", id);

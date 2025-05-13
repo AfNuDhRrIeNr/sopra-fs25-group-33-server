@@ -76,8 +76,10 @@ public class WebSocketController {
         else if (gameState.getAction().equals("SUBMIT")) {
             return handleSubmit(gameId, gameState);
             
-        }  else if (gameState.getAction().equals("SKIP") || gameState.getAction().equals("EXCHANGE")) {
-            return handleSkipOrExchange(gameId, gameState);
+        }  else if (gameState.getAction().equals("SKIP")) {
+            return handleSkip(gameId, gameState);
+        } else if (gameState.getAction().equals("EXCHANGE")) {
+            return handleExchange(gameId, gameState);
         }
         else if (gameState.getAction().equals("FETCH_GAME_STATE")) {
             return handleFetchGameState(gameId, gameState);
@@ -200,7 +202,8 @@ public class WebSocketController {
 
         if(game.getPlayerTiles(senderId).length == 0) {
             logger.info("User has no tiles. Drawing new tiles.");
-            gameService.assignLetters(game, 7, senderId, new String[0]);
+            String[] letters = {};
+            gameService.assignLetters(game, 7, senderId, letters);
         }
 
         gameState.setBoard(game.getBoard());
@@ -222,13 +225,13 @@ public class WebSocketController {
         return message;
     }
 
-    private MessageGameStateMessageDTO handleSkipOrExchange(String gameId, GameStateDTO gameState) {
+    private MessageGameStateMessageDTO handleSkip(String gameId, GameStateDTO gameState) {
         try {
 
             logger.info("Switching Turn for game: '{}'", gameId);
             // Skip the turn
             boolean isHostTurn = gameService.skipTurn(Long.valueOf(gameId), gameState.getPlayerId());
-            gameState.setUserTiles(new String[7]);
+            //gameState.setUserTiles(new String[7]);
             Optional<Game> optional = gameRepository.findByIdWithUsers(Long.valueOf(gameId));
             if(optional.isEmpty()) return new MessageGameStateMessageDTO(
                     Long.valueOf(gameId),
@@ -237,6 +240,53 @@ public class WebSocketController {
                     gameState
             );
             Game game = optional.get();
+            gameState.setPlayerId(isHostTurn ? game.getHost().getId() : game.getUsers().get(1).getId());
+            // Send skip success response to all players
+            return new MessageGameStateMessageDTO(
+                    Long.valueOf(gameId),
+                    MessageStatus.SUCCESS,
+                    gameState.getAction().equals("SKIP") ? "Move skipped" : "Tiles exchanged",
+                    gameState
+            );
+        } catch (GameNotFoundException e) {
+            logger.error("Game not found: {}", e.getMessage());
+            return new MessageGameStateMessageDTO(
+                    Long.valueOf(gameId),
+                    MessageStatus.ERROR,
+                    "Game not found: " + e.getMessage(),
+                    gameState
+            );
+        } catch (ResponseStatusException e) {
+            logger.error("Error processing turn skip: {}", e.getReason());
+            return new MessageGameStateMessageDTO(
+                    Long.valueOf(gameId),
+                    MessageStatus.ERROR,
+                    "Error skipping turn: " + e.getMessage(),
+                    gameState
+            );
+        } catch (Exception e) {
+            logger.info("Unexpected error: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    private MessageGameStateMessageDTO handleExchange(String gameId, GameStateDTO gameState) {
+        try {
+
+            logger.info("Exchanging tiles for game: '{}' and user '{}'", gameId, gameState.getPlayerId());
+            // Skip the turn
+            boolean isHostTurn = gameService.skipTurn(Long.valueOf(gameId), gameState.getPlayerId());
+            Optional<Game> optional = gameRepository.findByIdWithUsers(Long.valueOf(gameId));
+            if(optional.isEmpty()) return new MessageGameStateMessageDTO(
+                    Long.valueOf(gameId),
+                    MessageStatus.ERROR,
+                    "Game not found",
+                    gameState
+            );
+            Game game = optional.get();
+            gameService.assignLetters(game, gameState.getUserTiles().length, gameState.getPlayerId(),
+                    Arrays.stream(gameState.getUserTiles()).filter(tile -> !tile.equals("")).toArray(String[]::new));
+            gameState.setUserTiles(game.getPlayerTiles(gameState.getPlayerId()));
             gameState.setPlayerId(isHostTurn ? game.getHost().getId() : game.getUsers().get(1).getId());
             // Send skip success response to all players
             return new MessageGameStateMessageDTO(
