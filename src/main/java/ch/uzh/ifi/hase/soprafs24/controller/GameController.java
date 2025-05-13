@@ -211,7 +211,8 @@ public class GameController {
     @PutMapping("/games/{gameId}/startTime")
     public ResponseEntity<Game> setGameStartTime(@PathVariable Long gameId) {
         Game updatedGame = gameService.setGameStartTime(gameId);
-        return ResponseEntity.ok(updatedGame);
+        updatedGame1 = gameDTOMapper.INSTANCE.convertEntityToGameGetDTO(updatedGame);
+        return ResponseEntity.ok(updatedGame1);
     }
 
 }
