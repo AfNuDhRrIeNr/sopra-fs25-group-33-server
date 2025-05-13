@@ -208,7 +208,7 @@ public class GameController {
         return ResponseEntity.ok(DTOMapper.INSTANCE.convertEntityToGameInvitationsGetDTO(gameInvitationService.getGameInvitationById(Long.valueOf(invitationId))));
     }
 
-    @PutMapping("/{gameId}/startTime")
+    @PutMapping("/games/{gameId}/startTime")
     public ResponseEntity<Game> setGameStartTime(@PathVariable Long gameId) {
         Game updatedGame = gameService.setGameStartTime(gameId);
         return ResponseEntity.ok(updatedGame);
