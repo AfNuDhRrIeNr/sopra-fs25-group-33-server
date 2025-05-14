@@ -1,18 +1,23 @@
 package ch.uzh.ifi.hase.soprafs24.websocket;
 
 import ch.uzh.ifi.hase.soprafs24.constant.MessageStatus;
+import ch.uzh.ifi.hase.soprafs24.constant.MoveType;
 import ch.uzh.ifi.hase.soprafs24.entity.Game;
+import ch.uzh.ifi.hase.soprafs24.entity.User;
 import ch.uzh.ifi.hase.soprafs24.repository.GameRepository;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.GameStateDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.MessageGameStateMessageDTO;
+import ch.uzh.ifi.hase.soprafs24.service.GameService;
 import ch.uzh.ifi.hase.soprafs24.service.MoveSubmitService;
 import ch.uzh.ifi.hase.soprafs24.service.MoveValidatorService;
 import org.junit.jupiter.api.*;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.web.server.LocalServerPort;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.web.server.LocalServerPort;
 import org.springframework.http.HttpStatus;
 import org.springframework.messaging.converter.MappingJackson2MessageConverter;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -28,15 +33,9 @@ import org.springframework.web.socket.messaging.WebSocketStompClient;
 import org.springframework.web.socket.sockjs.client.SockJsClient;
 import org.springframework.web.socket.sockjs.client.Transport;
 import org.springframework.web.socket.sockjs.client.WebSocketTransport;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Mockito;
 
 import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -72,6 +71,9 @@ public class WebSocketControllerTest {
 
     @MockBean
     private GameRepository gameRepository;
+
+    @MockBean
+    private GameService gameService;
 
     @MockBean
     private MoveValidatorService moveValidatorService;
@@ -196,6 +198,125 @@ public class WebSocketControllerTest {
     }
 
     @Test
+    void testFetchInitialGameState_gameNotInitialized_success() {
+        // Assign
+        User host = new User();
+        host.setId(2L);
+
+
+        Game game = new Game();
+        game.setId(1L);
+        game.setHost(host);
+        game.addUser(host);
+        game.setHostTurn(true);
+
+        GameStateDTO gameState = new GameStateDTO();
+        gameState.setId(game.getId());
+        gameState.setPlayerId(host.getId());
+        gameState.setAction("FETCH_GAME_STATE");
+        gameState.setType(MoveType.UNKNOWN);
+        gameState.setUserTiles(new String[]{});
+        gameState.setToken("test-token");
+        gameState.setBoard(new String[15][15]);
+
+        when(gameService.getGameById(game.getId())).thenReturn(Optional.of(game));
+        when(gameRepository.findByIdWithUsers(game.getId())).thenReturn(Optional.of(game));
+        when(gameService.assignNewLetters(any(), anyLong(), any())).thenReturn(new String[]{"A", "B", "C", "D", "E", "F", "G"});
+
+
+        // Act
+        MessageGameStateMessageDTO result = webSocketController.handleGameStates(game.getId().toString(), gameState);
+
+        // Assert
+        Assertions.assertNotNull(result);
+        Assertions.assertEquals(game.getId(), result.getGameId());
+        Assertions.assertEquals(MessageStatus.SUCCESS, result.getMessageStatus());
+        Assertions.assertEquals("Game state fetched successfully", result.getMessage());
+        Assertions.assertNotNull(result.getGameState().getUserTiles());
+    }
+
+    @Test
+    void testFetchInitialGameState_gameNotFound_returnsError() {
+        // Given
+        Long gameId = 1L;
+        GameStateDTO gameState = new GameStateDTO();
+        gameState.setId(gameId);
+        gameState.setAction("FETCH_GAME_STATE");
+        gameState.setType(MoveType.UNKNOWN);
+        gameState.setUserTiles(new String[]{});
+        gameState.setToken("test-token");
+        gameState.setBoard(new String[15][15]);
+
+        when(gameService.getGameById(gameId)).thenReturn(Optional.empty());
+
+        // Act
+        MessageGameStateMessageDTO result = webSocketController.handleGameStates(gameId.toString(), gameState);
+
+        // Assert
+        assertNotNull(result);
+        assertTrue(result.getMessageStatus() == MessageStatus.ERROR);
+        assertTrue(result.getMessage().contains("Game was not found."));
+        assertEquals(result.getGameId(), gameId);
+    }
+
+    @Test
+    void fetchGameState_gameContainsData_NotOverwritten() {
+        // Assign
+        User host = new User();
+        host.setId(2L);
+        String[] hostTiles = new String[]{"A", "A", "A", "A", "A", "A", "A"};
+
+        User guest = new User();
+        guest.setId(3L);
+
+        Game game = new Game();
+        game.setId(1L);
+        game.setHost(host);
+        game.addUser(host);
+        game.addUser(guest);
+        game.setTilesForPlayer(host.getId(), Arrays.stream(hostTiles).toList());
+        game.setTilesForPlayer(guest.getId(), Arrays.stream(new String[]{"B","B","B","B","B","B","B"}).toList());
+        game.setHostTurn(true);
+        game.addScore(host.getId(), 10);
+        game.addScore(guest.getId(), 20);
+        game.initializeEmptyBoard();
+        String[][] board = game.getBoard();
+        board[0][0] = "Y";
+        board[14][14] = "Z";
+        game.setBoard(board);
+
+        GameStateDTO gameStateDto = new GameStateDTO(){
+            {
+                setId(game.getId());
+                setPlayerId(host.getId());
+                setAction("FETCH_GAME_STATE");
+                setType(MoveType.UNKNOWN);
+                setToken("test-token");
+                setUserTiles(new String[]{});
+                setBoard(new String[15][15]);
+            }
+        };
+
+        when(gameService.getGameById(game.getId())).thenReturn(Optional.of(game));
+        when(gameRepository.findByIdWithUsers(game.getId())).thenReturn(Optional.of(game));
+        when(gameService.assignNewLetters(any(),  anyLong(), any())).thenThrow(new IllegalArgumentException("Should not be called"));
+
+        // Act
+        MessageGameStateMessageDTO result = webSocketController.handleGameStates(game.getId().toString(), gameStateDto);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(game.getId(), result.getGameId());
+        assertEquals(MessageStatus.SUCCESS, result.getMessageStatus());
+        assertEquals("Game state fetched successfully", result.getMessage());
+        assertNotNull(result.getGameState().getUserTiles());
+        assertEquals(7, result.getGameState().getUserTiles().length);
+        assertTrue(Arrays.stream(result.getGameState().getUserTiles()).allMatch(tile -> tile.equals("A")));
+        assertTrue(Arrays.deepEquals(board, result.getGameState().getBoard()));
+        assertEquals(game.getPlayerScores(), result.getGameState().getPlayerScores());
+    }
+
+    @Test
     void testValidateMove_gameNotFound_sendsErrorToUserChannel() {
         // Given
         Long gameId = 1L;
@@ -275,12 +396,16 @@ public class WebSocketControllerTest {
         Long gameId = 1L;
         Long playerId = 123L;
 
+        User player = new User();
+        player.setId(2L);
+        player.setUsername("testUser");
+
         GameStateDTO gameState = new GameStateDTO();
         gameState.setId(gameId);
         gameState.setPlayerId(playerId);
         gameState.setAction("SUBMIT");
         gameState.setToken("test-token");
-        gameState.setUserTiles(new String[]{"A", "B", "C", "D", "E"});
+        gameState.setUserTiles(new String[]{"A", "B", "C", "D", "E", "", ""});
         
         String[][] board = new String[15][15];
         for (int i = 0; i < 15; i++) {
@@ -305,7 +430,8 @@ public class WebSocketControllerTest {
         playerScores.put(playerId, expectedScore);
         when(mockGame.getPlayerScores()).thenReturn(playerScores);
         when(gameRepository.findById(gameId)).thenReturn(Optional.of(mockGame));
-
+        when(gameService.assignNewLetters(any(), anyLong(), any())).thenReturn(new String[]{"A", "B", "C", "D", "E", "F", "G"});
+        when(gameService.changeUserTurn(any())).thenReturn(player);
         // When
         MessageGameStateMessageDTO result = webSocketController.handleGameStates(
                 gameId.toString(), gameState);

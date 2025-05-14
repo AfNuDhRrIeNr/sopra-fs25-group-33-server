@@ -15,11 +15,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 import java.util.Optional;
 import java.time.LocalDateTime;
+
+import static java.util.stream.Collectors.toList;
 
 @Service
 @Transactional
@@ -54,7 +59,7 @@ public class GameService {
     public Game joinGame(Game game, User user) throws GameNotFoundException, UserNotFoundException {
         if(game == null || game.getId() == null ||gameRepository.findById(game.getId()).isEmpty()) throw new GameNotFoundException("Game not found");
         if(user == null || user.getId() == null ||userRepository.findById(user.getId()).isEmpty()) throw new UserNotFoundException("User not found");
-        game.addUser(user);
+        if(!game.getUsers().contains(user)) game.addUser(user);
         return gameRepository.saveAndFlush(game);
     }
 
@@ -74,16 +79,46 @@ public class GameService {
         return gameRepository.saveAndFlush(game);
     }
 
-    public List<Character> drawLetters(Game game, int count) {
-        List<Character> assignedLetters = game.drawLetters(count);
-        gameRepository.saveAndFlush(game);
-        return assignedLetters;
-    }
-
-    public List<Character> exchangeTiles(Game game, List<Character> tilesToExchange) {
+    /*public List<Character> exchangeTiles(Game game, List<Character> tilesToExchange, Long userId) {
         List<Character> exchangedTiles = game.exchangeTiles(tilesToExchange);
+
+        // Corrected conversion from array to list
+        String[] playerTiles = game.getPlayerTiles(userId);
+        List<String> allNewTiles = new ArrayList<>(Arrays.asList(playerTiles));
+
+
+        for (int i = 0; i < tilesToExchange.size(); i++) {
+            Character oldTile = tilesToExchange.get(i);
+            int j = allNewTiles.indexOf(String.valueOf(oldTile));
+            allNewTiles.add(j, String.valueOf(exchangedTiles.get(i)));
+        }
+
+        game.setTilesForPlayer(userId, allNewTiles);
         gameRepository.saveAndFlush(game);
         return exchangedTiles;
+    }*/
+    public void exchangeTiles(Game game, String[] userTiles, Long userId) {
+        List<Character> exchangedTiles = game.exchangeTiles(Arrays.stream(userTiles).map(s -> s.charAt(0)).collect(toList()));
+        List<String> allNewTiles = new ArrayList<>(Arrays.stream(game.getPlayerTiles(userId)).toList());
+        for (int i = 0; i < userTiles.length; i++) {
+            String oldTile = userTiles[i];
+            allNewTiles.remove(oldTile);
+            allNewTiles.add(String.valueOf(exchangedTiles.get(i)));
+        }
+        game.setTilesForPlayer(userId, allNewTiles);
+        gameRepository.saveAndFlush(game);
+    }
+
+    public String[] assignNewLetters(Game game, Long userId, String[] tilesLeftInHand) {
+        if(tilesLeftInHand.length > 7) throw new IllegalArgumentException("You can only have at most 7 tiles in hand");
+        List<Character> assignedLetters = game.drawLetters(7 - tilesLeftInHand.length);
+        List<String> allNewTiles = new ArrayList<>(Arrays.asList(tilesLeftInHand));
+        for (Character letter : assignedLetters) {
+            allNewTiles.add(String.valueOf(letter));
+        }
+        game.setTilesForPlayer(userId, allNewTiles);
+        gameRepository.saveAndFlush(game);
+        return allNewTiles.toArray(new String[0]);
     }
 
     public boolean skipTurn(Long id, Long playerId) throws GameNotFoundException {
@@ -91,7 +126,7 @@ public class GameService {
         if (gameOptional.isPresent()) {
             Game game = gameOptional.get();
             game.setHostTurn(!game.getHost().getId().equals(playerId));
-            gameRepository.save(game);
+            gameRepository.saveAndFlush(game);
             return game.isHostTurn();
         } else {
             log.warn("Game with id {} not found", id);
@@ -107,6 +142,13 @@ public class GameService {
     public void deleteGame(Game game) {
         gameRepository.delete(game);
     }
+  
+    public User changeUserTurn(Game game) {
+        game = gameRepository.findByIdWithUsers(game.getId()).get();
+        game.setHostTurn(!game.isHostTurn());
+        gameRepository.saveAndFlush(game);
+        return game.isHostTurn() ? game.getHost() : game.getUsers().get(1);
+    }
 
     public void setGameStartTime(Game game) {
 
@@ -119,5 +161,4 @@ public class GameService {
         }
 
     }
-
 }

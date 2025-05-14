@@ -16,6 +16,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -144,12 +145,44 @@ public class GameServiceTest {
 
     @Test
     public void deleteGame_validGame_gameDeleted() {
-    
+
     Game game = new Game();
     game.setId(1L);
     gameService.deleteGame(game);
 
     verify(gameRepository, times(1)).delete(game);
 }
+
+    @Test
+    void testAssignLetters() {
+        // Arrange
+        when(gameRepository.findById(testGame.getId())).thenReturn(Optional.of(testGame));
+        when(gameRepository.saveAndFlush(testGame)).thenReturn(testGame);
+        testGame.setTilesForPlayer(testHost.getId(), List.of("A", "B", "C", "D"));
+
+        // Act
+        String[] assignedLetters = gameService.assignNewLetters(testGame, testHost.getId(), testGame.getPlayerTiles(testHost.getId()));
+        List<String> assignedLettersList = Arrays.asList(assignedLetters);
+
+        // Assert
+        assertNotNull(assignedLetters);
+        assertEquals(7, assignedLetters.length);
+        assertTrue(assignedLettersList.contains("A"));
+        assertTrue(assignedLettersList.contains("B"));
+        assertTrue(assignedLettersList.contains("C"));
+        assertTrue(assignedLettersList.contains("D"));
+    }
+
+    @Test
+    void testAssignLettersOutOfBounds() {
+        // Arrange
+        when(gameRepository.findById(testGame.getId())).thenReturn(Optional.of(testGame));
+        when(gameRepository.saveAndFlush(testGame)).thenReturn(testGame);
+
+        // Act & Assert
+        assertThrows(IllegalArgumentException.class, () -> {
+            gameService.assignNewLetters(testGame, testHost.getId(), new String[]{"A", "B", "C", "D", "E", "F", "G", "H"});
+        });
+    }
 
 }
