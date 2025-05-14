@@ -22,6 +22,7 @@ public class GameStateDTO {
     private Long playerId;
     private Map<Long, Integer> playerScores;
     private Long surrenderedPlayerId;
+    private long remainingTime;
 
     public boolean isValid() {
         if(this.id == null) throw new IllegalArgumentException("ID is missing");
@@ -98,12 +99,18 @@ public class GameStateDTO {
         this.surrenderedPlayerId = surrenderedPlayerId;
     }
 
-
     public MoveType getType() {
         return type;
     }
 
     public void setType(MoveType type) {
         this.type = type;
+    }
+    
+    public long getRemainingTime() {
+        return remainingTime;
+    }  
+    public void setRemainingTime(long remainingTime) {
+        this.remainingTime = remainingTime;
     }
 }

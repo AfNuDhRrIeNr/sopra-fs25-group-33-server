@@ -8,6 +8,7 @@ import ch.uzh.ifi.hase.soprafs24.enums.InvitationStatus;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.FriendRequestPostDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.FriendRequestPutDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.UserPostDTO;
+import ch.uzh.ifi.hase.soprafs24.rest.dto.UserPutDTO;
 import ch.uzh.ifi.hase.soprafs24.service.FriendRequestService;
 import ch.uzh.ifi.hase.soprafs24.service.UserService;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -262,6 +263,39 @@ public class UserControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(2)));
     }
+
+    @Test
+    public void updateUserStatus_validInput_returnsUpdatedUser() throws Exception {
+        // given
+        User user = new User();
+        user.setId(1L);
+        user.setUsername("testUsername");
+        user.setStatus(UserStatus.IN_GAME);
+
+        User updatedUser = new User();
+        updatedUser.setId(1L);
+        updatedUser.setUsername("testUsername");
+        updatedUser.setStatus(UserStatus.ONLINE);
+
+        // Simulate the DTO sent from frontend
+        UserPutDTO userPutDTO = new UserPutDTO();
+        userPutDTO.setStatus("ONLINE");
+
+        given(userService.getUserById(1L)).willReturn(Optional.of(user));
+        given(userService.updateUserStatus(user, UserStatus.ONLINE)).willReturn(updatedUser);
+
+        MockHttpServletRequestBuilder putRequest = put("/users")
+                .param("userId", "1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(asJsonString(userPutDTO));
+
+        // when/then
+        mockMvc.perform(putRequest)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id", is(updatedUser.getId().intValue())))
+                .andExpect(jsonPath("$.username", is(updatedUser.getUsername())))
+                .andExpect(jsonPath("$.status", is(UserStatus.ONLINE.toString())));
+        }
 
   // --------------------------------------------- FriendRequests ---------------------------------------------
 

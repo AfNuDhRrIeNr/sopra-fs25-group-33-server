@@ -19,8 +19,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 import java.util.Optional;
+import java.time.LocalDateTime;
 
 import static java.util.stream.Collectors.toList;
 
@@ -140,11 +142,23 @@ public class GameService {
     public void deleteGame(Game game) {
         gameRepository.delete(game);
     }
-
+  
     public User changeUserTurn(Game game) {
         game = gameRepository.findByIdWithUsers(game.getId()).get();
         game.setHostTurn(!game.isHostTurn());
         gameRepository.saveAndFlush(game);
         return game.isHostTurn() ? game.getHost() : game.getUsers().get(1);
+    }
+
+    public void setGameStartTime(Game game) {
+
+        if (game.getStartTime() == null) {
+            game.setStartTime(LocalDateTime.now());
+            gameRepository.save(game);
+            log.info("Game started. Start time set to {}", game.getStartTime());
+        } else {
+            log.info("Game already has a start time: {}", game.getStartTime());
+        }
+
     }
 }
