@@ -76,6 +76,8 @@ public class GameController {
         if (gameOptional.isEmpty()) { return ResponseEntity.notFound().build(); }
         Game game = gameOptional.get();
 
+        gameService.setGameStartTime(game);
+
         if (!gameService.isUserInGame(game,user)) { return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build(); }
 
         if (gamePutDTO.getGameStatus() != null)
