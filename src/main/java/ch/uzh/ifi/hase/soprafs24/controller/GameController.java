@@ -107,18 +107,18 @@ public class GameController {
 
 
 
-    @ResponseStatus(HttpStatus.OK)
+   /* @ResponseStatus(HttpStatus.OK)
     @PutMapping("/games/{id}/users/{userId}/assign")
     public GamePutDTO assignTiles(@PathVariable Long id, @PathVariable Long userId, @RequestParam int count) {
         Game game = gameService.getGameById(id)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found"));
-        List<Character> newTiles = gameService.assignLetters(game, count, userId, new String[0]);
+        List<Character> newTiles = gameService.assignNewLetters(game, count, userId, new String[0]);
         GamePutDTO response = new GamePutDTO();
         response.setNewTiles(newTiles);
         return response;
     }
 
-    @ResponseStatus(HttpStatus.OK)
+   /* @ResponseStatus(HttpStatus.OK)
     @PutMapping("/games/{id}/users/{userId}/exchange")
     public GamePutDTO exchangeTiles(@PathVariable Long id, @PathVariable Long userId, @RequestBody List<Character> tilesForExchange) {
         Game game = gameService.getGameById(id)
@@ -127,7 +127,7 @@ public class GameController {
         GamePutDTO response = new GamePutDTO();
         response.setNewTiles(newTiles);
         return response;
-    }
+    }*/
 
     @GetMapping("/games/{id}/letters/{letter}")
     public int getRemainingLetters(@PathVariable Long id, @PathVariable char letter) {

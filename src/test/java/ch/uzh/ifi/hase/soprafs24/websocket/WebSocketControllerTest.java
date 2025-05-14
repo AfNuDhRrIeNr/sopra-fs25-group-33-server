@@ -221,7 +221,7 @@ public class WebSocketControllerTest {
 
         when(gameService.getGameById(game.getId())).thenReturn(Optional.of(game));
         when(gameRepository.findByIdWithUsers(game.getId())).thenReturn(Optional.of(game));
-        when(gameService.assignLetters(any(), anyInt(), anyLong(), any())).thenReturn(List.of('A', 'B', 'C', 'D', 'E', 'F', 'G'));
+        when(gameService.assignNewLetters(any(), anyLong(), any())).thenReturn(new String[]{"A", "B", "C", "D", "E", "F", "G"});
 
 
         // Act
@@ -299,7 +299,7 @@ public class WebSocketControllerTest {
 
         when(gameService.getGameById(game.getId())).thenReturn(Optional.of(game));
         when(gameRepository.findByIdWithUsers(game.getId())).thenReturn(Optional.of(game));
-        when(gameService.assignLetters(any(), anyInt(), anyLong(), any())).thenThrow(new IllegalArgumentException("Should not be called"));
+        when(gameService.assignNewLetters(any(),  anyLong(), any())).thenThrow(new IllegalArgumentException("Should not be called"));
 
         // Act
         MessageGameStateMessageDTO result = webSocketController.handleGameStates(game.getId().toString(), gameStateDto);
@@ -430,7 +430,7 @@ public class WebSocketControllerTest {
         playerScores.put(playerId, expectedScore);
         when(mockGame.getPlayerScores()).thenReturn(playerScores);
         when(gameRepository.findById(gameId)).thenReturn(Optional.of(mockGame));
-        when(gameService.assignLetters(any(), anyInt(), anyLong(), any())).thenReturn(List.of('A', 'B', 'C', 'D', 'E', 'F', 'G'));
+        when(gameService.assignNewLetters(any(), anyLong(), any())).thenReturn(new String[]{"A", "B", "C", "D", "E", "F", "G"});
         when(gameService.changeUserTurn(any())).thenReturn(player);
         // When
         MessageGameStateMessageDTO result = webSocketController.handleGameStates(

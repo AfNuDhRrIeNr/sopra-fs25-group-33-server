@@ -1,19 +1,16 @@
 package ch.uzh.ifi.hase.soprafs24.websocket;
 
+import ch.uzh.ifi.hase.soprafs24.constant.GameStatus;
 import ch.uzh.ifi.hase.soprafs24.constant.MessageStatus;
 import ch.uzh.ifi.hase.soprafs24.constant.errors.GameNotFoundException;
 import ch.uzh.ifi.hase.soprafs24.entity.Game;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
 import ch.uzh.ifi.hase.soprafs24.repository.GameRepository;
-import ch.uzh.ifi.hase.soprafs24.constant.GameStatus;
-import ch.uzh.ifi.hase.soprafs24.rest.dto.MessageGameStateMessageDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.GameStateDTO;
+import ch.uzh.ifi.hase.soprafs24.rest.dto.MessageGameStateMessageDTO;
 import ch.uzh.ifi.hase.soprafs24.service.GameService;
 import ch.uzh.ifi.hase.soprafs24.service.MoveSubmitService;
 import ch.uzh.ifi.hase.soprafs24.service.MoveValidatorService;
-import java.util.List;
-import java.util.Arrays;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,7 +22,8 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.*;
+import java.util.List;
+import java.util.Optional;
 
 
 @Controller
@@ -89,7 +87,7 @@ public class WebSocketController {
             try {
                 logger.info("Game {} is ending. Triggered by player {}", gameId, gameState.getPlayerId());
 
-                Game game = gameRepository.findById(Long.valueOf(gameId))
+                Game game = gameRepository.findByIdWithUsers(Long.valueOf(gameId))
                         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found"));
 
                 List<User> users = game.getUsers();
@@ -151,7 +149,7 @@ public class WebSocketController {
             try {
                 logger.info("Inside Vote handler for game: '{}'", gameId);
 
-                Game game = gameRepository.findById(Long.valueOf(gameId))
+                Game game = gameRepository.findByIdWithUsers(Long.valueOf(gameId))
                         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found"));
 
                 List<User> users = game.getUsers();
@@ -236,17 +234,10 @@ public class WebSocketController {
 
             logger.info("Player {} scored {} points in game {}", gameState.getPlayerId(), score, gameId);
             // 4. draw tiles to fill hand
-            int tilesToDraw = (int) Arrays.stream(gameState.getUserTiles()).filter(tile -> tile.equals("")).count();
-
-            List<Character> newTiles = gameService.assignLetters(game,tilesToDraw, gameState.getPlayerId(),
-                    Arrays.stream(gameState.getUserTiles()).filter(tile -> !tile.equals("")).toArray(String[]::new));
-
-
+            String[] newTiles = gameService.assignNewLetters(game, gameState.getPlayerId(),gameState.getUserTiles());
             logger.info("TilesToDraw passed");
             // 5. Update the game state with the new tiles
-            gameState.setUserTiles(newTiles.stream()
-                    .map(String::valueOf) // Convert each Character to a String
-                    .toArray(String[]::new));
+            gameState.setUserTiles(newTiles);
             logger.info("UserTiles passed");
             //6. Update the game state with user turn
             User userAtTurn = gameService.changeUserTurn(game);
@@ -324,7 +315,7 @@ public class WebSocketController {
         if(game.getPlayerTiles(senderId).length == 0) {
             logger.info("User has no tiles. Drawing new tiles.");
             String[] letters = {};
-            gameService.assignLetters(game, 7, senderId, letters);
+            gameService.assignNewLetters(game, senderId, letters);
         }
 
         gameState.setBoard(game.getBoard());
@@ -405,8 +396,7 @@ public class WebSocketController {
                     gameState
             );
             Game game = optional.get();
-            gameService.assignLetters(game, gameState.getUserTiles().length, gameState.getPlayerId(),
-                    Arrays.stream(gameState.getUserTiles()).filter(tile -> !tile.equals("")).toArray(String[]::new));
+            gameService.exchangeTiles(game, gameState.getUserTiles(), gameState.getPlayerId());
             gameState.setUserTiles(game.getPlayerTiles(gameState.getPlayerId()));
             gameState.setPlayerId(isHostTurn ? game.getHost().getId() : game.getUsers().get(1).getId());
             // Send skip success response to all players

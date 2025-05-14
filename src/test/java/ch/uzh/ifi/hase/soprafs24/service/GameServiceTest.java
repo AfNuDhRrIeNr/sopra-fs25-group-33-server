@@ -16,6 +16,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -157,16 +158,19 @@ public class GameServiceTest {
         // Arrange
         when(gameRepository.findById(testGame.getId())).thenReturn(Optional.of(testGame));
         when(gameRepository.saveAndFlush(testGame)).thenReturn(testGame);
-        testGame.setTilesForPlayer(testHost.getId(), List.of("A", "B", "C", "D","E"));
+        testGame.setTilesForPlayer(testHost.getId(), List.of("A", "B", "C", "D"));
 
         // Act
-        List<Character> assignedLetters = gameService.assignLetters(testGame, 4, testHost.getId(), new String[]{"A", "B", "C","D"});
+        String[] assignedLetters = gameService.assignNewLetters(testGame, testHost.getId(), testGame.getPlayerTiles(testHost.getId()));
+        List<String> assignedLettersList = Arrays.asList(assignedLetters);
 
         // Assert
         assertNotNull(assignedLetters);
-        assertEquals(5, assignedLetters.size());
-        assertTrue(assignedLetters.contains('E'));
-
+        assertEquals(7, assignedLetters.length);
+        assertTrue(assignedLettersList.contains("A"));
+        assertTrue(assignedLettersList.contains("B"));
+        assertTrue(assignedLettersList.contains("C"));
+        assertTrue(assignedLettersList.contains("D"));
     }
 
     @Test
@@ -177,10 +181,7 @@ public class GameServiceTest {
 
         // Act & Assert
         assertThrows(IllegalArgumentException.class, () -> {
-            gameService.assignLetters(testGame, 8, testHost.getId(), new String[]{"A", "B", "C","D"});
-        });
-        assertThrows(IllegalArgumentException.class, () -> {
-            gameService.assignLetters(testGame, 4, testHost.getId(), new String[]{"A", "B", "C","D", "E", "F", "G", "H"});
+            gameService.assignNewLetters(testGame, testHost.getId(), new String[]{"A", "B", "C", "D", "E", "F", "G", "H"});
         });
     }
 

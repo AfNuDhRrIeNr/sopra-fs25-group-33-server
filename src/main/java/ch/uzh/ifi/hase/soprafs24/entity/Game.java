@@ -58,7 +58,7 @@ public class Game implements Serializable {
 
     public String[] getPlayerTiles(Long userId) {
         String tiles = playerTiles.get(userId);
-        return tiles==null ? new String[0]: tiles.split("");
+        return tiles==null ? new String[]{}: tiles.split("");
     }
 
     public void setTilesForPlayer(Long userId, List<String> tiles) {

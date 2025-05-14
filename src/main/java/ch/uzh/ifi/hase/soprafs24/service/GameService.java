@@ -22,6 +22,8 @@ import java.util.List;
 
 import java.util.Optional;
 
+import static java.util.stream.Collectors.toList;
+
 @Service
 @Transactional
 public class GameService {
@@ -75,7 +77,7 @@ public class GameService {
         return gameRepository.saveAndFlush(game);
     }
 
-    public List<Character> exchangeTiles(Game game, List<Character> tilesToExchange, Long userId) {
+    /*public List<Character> exchangeTiles(Game game, List<Character> tilesToExchange, Long userId) {
         List<Character> exchangedTiles = game.exchangeTiles(tilesToExchange);
 
         // Corrected conversion from array to list
@@ -92,39 +94,29 @@ public class GameService {
         game.setTilesForPlayer(userId, allNewTiles);
         gameRepository.saveAndFlush(game);
         return exchangedTiles;
-    }
-
-    public List<Character> assignLetters(Game game, int count, Long userId, String[] tilesLeftInHand) {
-        if(count > 7 || tilesLeftInHand.length > 7) throw new IllegalArgumentException("You can only have at most 7 tiles in hand");
-        List<Character> tilesToExchange = new ArrayList<>();
-        for(int i = 0; i < tilesLeftInHand.length; i++) tilesToExchange.add(tilesLeftInHand[i].charAt(0));
-        while(tilesToExchange.size() < count) tilesToExchange.add(' ');
-        List<Character> newTiles = game.exchangeTiles(tilesToExchange);
+    }*/
+    public void exchangeTiles(Game game, String[] userTiles, Long userId) {
+        List<Character> exchangedTiles = game.exchangeTiles(Arrays.stream(userTiles).map(s -> s.charAt(0)).collect(toList()));
         List<String> allNewTiles = new ArrayList<>(Arrays.stream(game.getPlayerTiles(userId)).toList());
-        // Add newly drawn tiles to the list
-        for (char tile : newTiles) {
-            allNewTiles.add(String.valueOf(tile));
+        for (int i = 0; i < userTiles.length; i++) {
+            String oldTile = userTiles[i];
+            allNewTiles.remove(oldTile);
+            allNewTiles.add(String.valueOf(exchangedTiles.get(i)));
         }
-        // Remove tiles that were exchanged
-        for(String tile: tilesLeftInHand) {
-            allNewTiles.remove(tile);
-        }
-        newTiles.clear();
-
-        // Add the new tiles to the list as chars
-        for(String tile: allNewTiles) {
-            newTiles.add(tile.charAt(0));
-        }
-
-        log.info("-------------------------------------------------");
-        log.info("New tiles: {}", newTiles);
-        log.info("All new tiles: {}", allNewTiles);
-        log.info("Tiles left in hand: {}", Arrays.toString(tilesLeftInHand));
-        log.info("Tiles to exchange: {}", tilesToExchange);
-        log.info("Tiles in hand: {}", game.getPlayerTiles(userId));
         game.setTilesForPlayer(userId, allNewTiles);
         gameRepository.saveAndFlush(game);
-        return newTiles;
+    }
+
+    public String[] assignNewLetters(Game game, Long userId, String[] tilesLeftInHand) {
+        if(tilesLeftInHand.length > 7) throw new IllegalArgumentException("You can only have at most 7 tiles in hand");
+        List<Character> assignedLetters = game.drawLetters(7 - tilesLeftInHand.length);
+        List<String> allNewTiles = new ArrayList<>(Arrays.asList(tilesLeftInHand));
+        for (Character letter : assignedLetters) {
+            allNewTiles.add(String.valueOf(letter));
+        }
+        game.setTilesForPlayer(userId, allNewTiles);
+        gameRepository.saveAndFlush(game);
+        return allNewTiles.toArray(new String[0]);
     }
 
     public boolean skipTurn(Long id, Long playerId) throws GameNotFoundException {
