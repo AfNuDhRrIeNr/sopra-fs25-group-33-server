@@ -354,7 +354,7 @@ public class WebSocketController {
                     new MessageGameStateMessageDTO(
                         Long.valueOf(gameId),
                         MessageStatus.SUCCESS,
-                        "Timer synchronized. Remaining time: " + remainingSeconds + " minutes.",
+                        "Timer synchronized. Remaining time: " + remainingSeconds + " seconds.",
                         gameState
                     )
                 );
