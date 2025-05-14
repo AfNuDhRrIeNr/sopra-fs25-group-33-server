@@ -6,25 +6,13 @@ import ch.uzh.ifi.hase.soprafs24.constant.errors.GameNotFoundException;
 import ch.uzh.ifi.hase.soprafs24.entity.Game;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
 import ch.uzh.ifi.hase.soprafs24.repository.GameRepository;
+import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.GameStateDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.MessageGameStateMessageDTO;
 import ch.uzh.ifi.hase.soprafs24.service.GameService;
 import ch.uzh.ifi.hase.soprafs24.service.MoveSubmitService;
 import ch.uzh.ifi.hase.soprafs24.service.MoveValidatorService;
 import org.slf4j.Logger;
-import ch.uzh.ifi.hase.soprafs24.rest.dto.MessageGameStateMessageDTO;
-import ch.uzh.ifi.hase.soprafs24.rest.dto.GameStateDTO;
-import ch.uzh.ifi.hase.soprafs24.service.MoveValidatorService;
-import ch.uzh.ifi.hase.soprafs24.service.MoveSubmitService;
-import ch.uzh.ifi.hase.soprafs24.repository.GameRepository;
-import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
-import ch.uzh.ifi.hase.soprafs24.service.GameService;
-import ch.uzh.ifi.hase.soprafs24.entity.Game;
-import ch.uzh.ifi.hase.soprafs24.entity.User;
-import java.util.List;
-import java.util.Random;
-import java.util.Arrays;
-import java.time.LocalDateTime;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -35,6 +23,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -219,7 +208,38 @@ public class WebSocketController {
                 );
             }
 
+        } else if (gameState.getAction().equals("TIMER")) {
+        try {
+
+            Game game = gameRepository.findById(Long.valueOf(gameId))
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found"));
+
+            LocalDateTime now = LocalDateTime.now();
+            long elapsedSeconds = java.time.Duration.between(game.getStartTime(), now).toSeconds();
+            long remainingSeconds = 45 * 60 - elapsedSeconds;
+
+            gameState.setRemainingTime(remainingSeconds);
+            simpleMessagingTemplate.convertAndSend(
+                    "/topic/game_states/" + gameId,
+                    new MessageGameStateMessageDTO(
+                            Long.valueOf(gameId),
+                            MessageStatus.SUCCESS,
+                            "Timer synchronized. Remaining time: " + remainingSeconds + " seconds.",
+                            gameState
+                    )
+            );
+
+            return null;
+        } catch (ResponseStatusException e) {
+            logger.error("Error during timer synchronization: {}", e.getReason());
+            return new MessageGameStateMessageDTO(
+                    Long.valueOf(gameId),
+                    MessageStatus.ERROR,
+                    "Error during timer synchronization: " + e.getMessage(),
+                    gameState
+            );
         }
+    }
         else {
             logger.error("Unknown action: {}", gameState.getAction());
             return new MessageGameStateMessageDTO(
@@ -251,7 +271,7 @@ public class WebSocketController {
 
             logger.info("Player {} scored {} points in game {}", gameState.getPlayerId(), score, gameId);
             // 4. draw tiles to fill hand
-            String[] newTiles = gameService.assignNewLetters(game, gameState.getPlayerId(),gameState.getUserTiles());
+            String[] newTiles = gameService.assignNewLetters(game, gameState.getPlayerId(), gameState.getUserTiles());
             logger.info("TilesToDraw passed");
             // 5. Update the game state with the new tiles
             gameState.setUserTiles(newTiles);
@@ -287,7 +307,8 @@ public class WebSocketController {
                     "Error submitting move: " + e.getMessage(),
                     gameState
             );
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             logger.error("Unexpected error: {}", e.getMessage());
             return new MessageGameStateMessageDTO(
                     Long.valueOf(gameId),
@@ -295,39 +316,7 @@ public class WebSocketController {
                     "Unexpected error: " + e.getMessage(),
                     gameState
 
-                );
-            }
-        } else if (gameState.getAction().equals("TIMER")) {
-            try {
-                
-                Game game = gameRepository.findById(Long.valueOf(gameId))
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found"));
-
-                LocalDateTime now = LocalDateTime.now();
-                long elapsedSeconds = java.time.Duration.between(game.getStartTime(), now).toSeconds();
-                long remainingSeconds = 45 * 60 - elapsedSeconds;
-              
-                gameState.setRemainingTime(remainingSeconds);
-                simpleMessagingTemplate.convertAndSend(
-                    "/topic/game_states/" + gameId,
-                    new MessageGameStateMessageDTO(
-                        Long.valueOf(gameId),
-                        MessageStatus.SUCCESS,
-                        "Timer synchronized. Remaining time: " + remainingSeconds + " seconds.",
-                        gameState
-                    )
-                );
-        
-                return null;
-            } catch (ResponseStatusException e) {
-                logger.error("Error during timer synchronization: {}", e.getReason());
-                return new MessageGameStateMessageDTO(
-                    Long.valueOf(gameId),
-                    MessageStatus.ERROR,
-                    "Error during timer synchronization: " + e.getMessage(),
-                    gameState
-                );
-            }
+            );
         }
     }
 
