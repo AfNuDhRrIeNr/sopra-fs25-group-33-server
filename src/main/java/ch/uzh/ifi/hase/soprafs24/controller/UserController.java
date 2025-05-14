@@ -55,6 +55,24 @@ public class UserController {
     return userGetDTOs;
   }
 
+  @PutMapping("/users")
+  @ResponseStatus(HttpStatus.OK)
+  @ResponseBody
+  public UserGetDTO updateUserStatus(@RequestParam Long userId, @RequestBody UserPutDTO userPutDTO) {
+    User user = userService.getUserById(userId)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+    UserStatus newStatus;
+    try {
+        newStatus = UserStatus.valueOf(userPutDTO.getStatus());
+    } catch (IllegalArgumentException e) {
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid status value");
+    }
+
+    user = userService.updateUserStatus(user, newStatus);
+    return DTOMapper.INSTANCE.convertEntityToUserGetDTO(user);
+  }
+
   @PostMapping("/users/register")
   @ResponseStatus(HttpStatus.CREATED)
   @ResponseBody

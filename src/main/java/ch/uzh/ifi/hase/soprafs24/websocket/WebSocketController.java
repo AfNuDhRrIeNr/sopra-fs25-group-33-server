@@ -7,6 +7,7 @@ import ch.uzh.ifi.hase.soprafs24.rest.dto.GameStateDTO;
 import ch.uzh.ifi.hase.soprafs24.service.MoveValidatorService;
 import ch.uzh.ifi.hase.soprafs24.service.MoveSubmitService;
 import ch.uzh.ifi.hase.soprafs24.repository.GameRepository;
+import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
 import ch.uzh.ifi.hase.soprafs24.service.GameService;
 import ch.uzh.ifi.hase.soprafs24.entity.Game;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
@@ -38,6 +39,9 @@ public class WebSocketController {
 
     @Autowired
     private GameRepository gameRepository;
+
+    @Autowired
+    private UserRepository userRepository;
 
     @Autowired
     SimpMessagingTemplate simpleMessagingTemplate;
@@ -235,9 +239,10 @@ public class WebSocketController {
                         user.setHighScore(playerScore);
                     }
                     user.setInGame(false);
+                    userRepository.saveAndFlush(user);
                 }
                 game.setGameStatus(GameStatus.TERMINATED);
-                gameRepository.save(game);
+                gameRepository.saveAndFlush(game);
         
                 logger.info("Game {} has been successfully terminated.", gameId);
 
