@@ -185,4 +185,78 @@ public class GameServiceTest {
         });
     }
 
+    @Test
+    void assignNewLetters_assignsAndSaves() {
+        Game game = mock(Game.class);
+        Long userId = 42L;
+        String[] tilesLeftInHand = new String[]{"A", "B", "C"};
+        List<Character> drawn = List.of('X', 'Y', 'Z', 'Q');
+
+        when(game.drawLetters(4)).thenReturn(drawn);
+
+        String[] result = gameService.assignNewLetters(game, userId, tilesLeftInHand);
+
+   
+        assertEquals(7, result.length);
+    
+        verify(game).setTilesForPlayer(eq(userId), anyList());
+    
+        verify(gameRepository).saveAndFlush(game);
+}
+
+    @Test
+    void exchangeTiles_updatesTilesAndSavesGame() {
+        Game game = mock(Game.class);
+        Long userId = 42L;
+        String[] userTiles = new String[]{"A", "B"};
+        List<Character> exchanged = List.of('X', 'Y');
+        String[] currentTiles = new String[]{"A", "B"};
+
+        when(game.exchangeTiles(Arrays.asList('A', 'B'))).thenReturn(exchanged);
+        when(game.getPlayerTiles(userId)).thenReturn(currentTiles);
+
+        gameService.exchangeTiles(game, userTiles, userId);
+
+        verify(game).setTilesForPlayer(eq(userId), anyList());
+    
+        verify(gameRepository).saveAndFlush(game);
+}
+    @Test
+    void countLettersInBag_returnsCorrectCount() {
+        Game game = mock(Game.class);
+        when(game.getRemainingLetterCount('Z')).thenReturn(4);
+
+        int count = gameService.countLettersInBag(game, 'Z');
+
+        assertEquals(4, count);
+        verify(game).getRemainingLetterCount('Z');
+    }
+    @Test
+    void setGameStartTime_setsStartTimeIfNull() {
+        Game game = new Game();
+        game.setStartTime(null);
+
+        doAnswer(invocation -> {
+            Game savedGame = invocation.getArgument(0);
+            assertNotNull(savedGame.getStartTime());
+            return savedGame;
+        }).when(gameRepository).save(any(Game.class));
+
+        gameService.setGameStartTime(game);
+
+        assertNotNull(game.getStartTime());
+        verify(gameRepository).save(game);
+    }
+    @Test
+    void setGameStartTime_doesNotOverrideExistingStartTime() {
+        Game game = new Game();
+        LocalDateTime existing = LocalDateTime.of(2024, 5, 14, 12, 0);
+        game.setStartTime(existing);
+
+        gameService.setGameStartTime(game);
+
+        assertEquals(existing, game.getStartTime());
+        verify(gameRepository, never()).save(game);
+    }
+
 }
