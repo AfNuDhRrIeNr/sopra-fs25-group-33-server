@@ -41,6 +41,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import ch.uzh.ifi.hase.soprafs24.entity.User;
+import ch.uzh.ifi.hase.soprafs24.constant.GameStatus;
+import ch.uzh.ifi.hase.soprafs24.repository.UserRepository;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -72,6 +75,9 @@ public class WebSocketControllerTest {
 
     @MockBean
     private GameRepository gameRepository;
+
+    @MockBean
+    private UserRepository userRepository;
 
     @MockBean
     private MoveValidatorService moveValidatorService;
@@ -319,5 +325,112 @@ public class WebSocketControllerTest {
         // Verify player score was updated
         verify(mockGame).addScore(playerId, expectedScore);
         verify(gameRepository).save(mockGame);
+    }
+    @Test
+    void handleGameStates_gameEnd_setsGameTerminatedAndUpdatesUsers() {
+        Long gameId = 1L;
+        Long playerId = 123L;
+
+        GameStateDTO gameState = new GameStateDTO();
+        gameState.setId(gameId);
+        gameState.setPlayerId(playerId);
+        gameState.setAction("GAME_END");
+        gameState.setToken("test-token");
+        gameState.setUserTiles(new String[]{"A", "B", "C", "D", "E"});
+        
+        String[][] board = new String[15][15];
+        for (int i = 0; i < 15; i++) {
+            for (int j = 0; j < 15; j++) {
+                board[i][j] = "";
+            }
+        }
+        board[7][7] = "H";
+        board[7][8] = "E";
+        board[7][9] = "L";
+        board[7][10] = "L";
+        board[7][11] = "O";
+        gameState.setBoard(board);
+
+
+        User user1 = new User();
+        user1.setId(10L);
+        user1.setHighScore(5);
+        user1.setInGame(true);
+    
+        User user2 = new User();
+        user2.setId(20L);
+        user2.setHighScore(3);
+        user2.setInGame(true);
+
+        Game game = Mockito.mock(Game.class);
+        when(game.getUsers()).thenReturn(List.of(user1, user2));
+        when(game.getPlayerScores()).thenReturn(Map.of(10L, 8, 20L, 4));
+        when(gameRepository.findById(gameId)).thenReturn(Optional.of(game));
+
+        when(gameRepository.findById(gameId)).thenReturn(Optional.of(game));
+
+        webSocketController.handleGameStates(gameId.toString(), gameState);
+
+        verify(game).setGameStatus(GameStatus.TERMINATED);
+        verify(gameRepository).saveAndFlush(game);
+        verify(userRepository, times(2)).saveAndFlush(any(User.class));
+
+        verify(messagingTemplate).convertAndSend(
+            eq("/topic/game_states/" + gameId),
+            any(MessageGameStateMessageDTO.class)
+        );
+
+    }
+    @Test
+    void handleGameStates_surrender_sendsSurrenderMessage() {
+        Long gameId = 1L;
+        Long playerId = 123L;
+
+        GameStateDTO gameState = new GameStateDTO();
+        gameState.setId(gameId);
+        gameState.setPlayerId(playerId);
+        gameState.setAction("SURRENDER");
+        gameState.setToken("test-token");
+        gameState.setUserTiles(new String[]{"A", "B", "C", "D", "E"});
+        
+        String[][] board = new String[15][15];
+        for (int i = 0; i < 15; i++) {
+            for (int j = 0; j < 15; j++) {
+                board[i][j] = "";
+            }
+        }
+        board[7][7] = "H";
+        board[7][8] = "E";
+        board[7][9] = "L";
+        board[7][10] = "L";
+        board[7][11] = "O";
+        gameState.setBoard(board);
+
+        User user1 = new User();
+        user1.setId(10L);
+        user1.setHighScore(5);
+        user1.setInGame(true);
+    
+        User user2 = new User();
+        user2.setId(20L);
+        user2.setHighScore(3);
+        user2.setInGame(true);
+
+        Game game = Mockito.mock(Game.class);
+        when(game.getUsers()).thenReturn(List.of(user1, user2));
+        when(game.getPlayerScores()).thenReturn(Map.of(10L, 8, 20L, 4));
+        when(gameRepository.findById(gameId)).thenReturn(Optional.of(game));
+
+        when(gameRepository.findById(gameId)).thenReturn(Optional.of(game));
+
+        webSocketController.handleGameStates(gameId.toString(), gameState);
+
+        verify(game).setGameStatus(GameStatus.TERMINATED);
+        verify(gameRepository).saveAndFlush(game);
+    
+        verify(messagingTemplate).convertAndSend(
+            eq("/topic/game_states/" + gameId),
+            any(MessageGameStateMessageDTO.class)
+        );
     }
 }

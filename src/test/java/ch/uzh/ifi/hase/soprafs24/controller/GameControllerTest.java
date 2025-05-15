@@ -28,6 +28,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.web.server.ResponseStatusException;
+import static org.mockito.ArgumentMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 
 import java.util.Optional;
 import java.util.List;
@@ -257,52 +259,93 @@ public class GameControllerTest {
         .andExpect(status().isNoContent());
 
     Mockito.verify(gameService).deleteGame(game);
-}
+    }
 
-@Test
-void deleteGame_gameNotFound_returnsNotFound() throws Exception {
+    @Test
+    void deleteGame_gameNotFound_returnsNotFound() throws Exception {
     
-    given(userService.getUserByToken("test-token")).willReturn(Optional.of(new User()));
-    given(gameService.getGameById(1L)).willReturn(Optional.empty());
+        given(userService.getUserByToken("test-token")).willReturn(Optional.of(new User()));
+        given(gameService.getGameById(1L)).willReturn(Optional.empty());
 
-    mockMvc.perform(delete("/games/1")
-            .header("Authorization", "test-token"))
-        .andExpect(status().isNotFound());
-}
+        mockMvc.perform(delete("/games/1")
+                .header("Authorization", "test-token"))
+            .andExpect(status().isNotFound());
+    }
 
-@Test
-void deleteGame_usersInGame_returnsConflict() throws Exception {
+    @Test
+    void deleteGame_usersInGame_returnsConflict() throws Exception {
     
-    Game game = new Game();
-    game.setId(1L);
+        Game game = new Game();
+        game.setId(1L);
 
-    User user1 = new User();
-    user1.setId(12345L);
-    User user2 = new User();
-    user2.setId(67890L);
+        User user1 = new User();
+        user1.setId(12345L);
+        User user2 = new User();
+        user2.setId(67890L);
 
-    List<User> users = new ArrayList<>();
-    users.add(user1);
-    users.add(user2);
-    game.setUsers(users); 
+        List<User> users = new ArrayList<>();
+        users.add(user1);
+        users.add(user2);
+        game.setUsers(users); 
 
-    given(userService.getUserByToken("test-token")).willReturn(Optional.of(user1));
-    given(gameService.getGameById(1L)).willReturn(Optional.of(game));
+        given(userService.getUserByToken("test-token")).willReturn(Optional.of(user1));
+        given(gameService.getGameById(1L)).willReturn(Optional.of(game));
 
-    mockMvc.perform(delete("/games/1")
-            .header("Authorization", "test-token"))
-        .andExpect(status().isConflict());
-}
+        mockMvc.perform(delete("/games/1")
+                .header("Authorization", "test-token"))
+            .andExpect(status().isConflict());
+    }
 
-@Test
-void deleteGame_invalidToken_returnsUnauthorized() throws Exception {
+    @Test
+    void deleteGame_invalidToken_returnsUnauthorized() throws Exception {
     
-    given(userService.getUserByToken("invalid-token")).willReturn(Optional.empty());
+        given(userService.getUserByToken("invalid-token")).willReturn(Optional.empty());
 
-    mockMvc.perform(delete("/games/1")
-            .header("Authorization", "invalid-token"))
-        .andExpect(status().isUnauthorized());
-}
+        mockMvc.perform(delete("/games/1")
+                .header("Authorization", "invalid-token"))
+            .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void getRemainingLetters_returnsCount() throws Exception {
+        Game game = Mockito.mock(Game.class);
+        Mockito.when(gameService.getGameById(1L)).thenReturn(Optional.of(game));
+        Mockito.when(gameService.countLettersInBag(game, 'A')).thenReturn(5);
+
+        mockMvc.perform(get("/games/1/letters/A"))
+                .andExpect(status().isOk())
+                .andExpect(content().string("5"));
+    }
+
+    @Test   
+    void assignTiles_returnsNewTiles() throws Exception {
+        Game game = Mockito.mock(Game.class);
+        List<Character> tiles = List.of('A', 'B', 'C');
+        Mockito.when(gameService.getGameById(1L)).thenReturn(Optional.of(game));
+        Mockito.when(gameService.drawLetters(game, 3)).thenReturn(tiles);
+
+        mockMvc.perform(put("/games/1/assign?count=3"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.newTiles[0]").value("A"))
+                .andExpect(jsonPath("$.newTiles[1]").value("B"))
+                .andExpect(jsonPath("$.newTiles[2]").value("C"));
+    }
+    @Test
+    void exchangeTiles_returnsNewTiles() throws Exception {
+        Game game = Mockito.mock(Game.class);
+        List<Character> tiles = List.of('X', 'Y', 'Z');
+        List<Character> exchange = List.of('A', 'B');
+        Mockito.when(gameService.getGameById(1L)).thenReturn(Optional.of(game));
+        Mockito.when(gameService.exchangeTiles(eq(game), eq(exchange))).thenReturn(tiles);
+
+        mockMvc.perform(put("/games/1/exchange")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("[\"A\",\"B\"]"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.newTiles[0]").value("X"))
+                .andExpect(jsonPath("$.newTiles[1]").value("Y"))
+                .andExpect(jsonPath("$.newTiles[2]").value("Z"));
+    }
 
 
     private String asJsonString(final Object object) {
