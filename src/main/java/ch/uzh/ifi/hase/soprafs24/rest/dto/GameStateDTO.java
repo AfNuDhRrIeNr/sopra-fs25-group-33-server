@@ -98,6 +98,15 @@ public class GameStateDTO {
     public void setSurrenderedPlayerId(Long surrenderedPlayerId) {
         this.surrenderedPlayerId = surrenderedPlayerId;
     }
+
+    public MoveType getType() {
+        return type;
+    }
+
+    public void setType(MoveType type) {
+        this.type = type;
+    }
+    
     public long getRemainingTime() {
         return remainingTime;
     }  

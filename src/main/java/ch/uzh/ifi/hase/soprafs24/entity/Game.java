@@ -4,16 +4,9 @@ import ch.uzh.ifi.hase.soprafs24.constant.GameStatus;
 import ch.uzh.ifi.hase.soprafs24.constant.LetterCount;
 
 import javax.persistence.*;
-import java.util.HashMap;
-import java.util.Random;
 import java.io.Serializable;
 import java.time.LocalDateTime;
-import java.util.Map;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Entity
 @Table(name = "GAME")
@@ -23,7 +16,7 @@ public class Game implements Serializable {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToMany(fetch = FetchType.EAGER)
+    @ManyToMany(/*fetch = FetchType.EAGER - Not possible causes user duplication when sending gameInvitations*/)
     @JoinTable(name = "game_user",
             joinColumns = @JoinColumn(name = "game_id"),
             inverseJoinColumns = @JoinColumn(name = "user_id"))
@@ -40,7 +33,7 @@ public class Game implements Serializable {
     @Column(nullable = true)
     private LocalDateTime startTime;
 
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "game_letter_bag", joinColumns = @JoinColumn(name = "game_id"))
     @MapKeyColumn(name = "letter")
     @Column(name = "count")
@@ -56,6 +49,26 @@ public class Game implements Serializable {
 
     @ElementCollection(fetch = FetchType.EAGER)
     private Map<Long, Integer> playerScores = new HashMap<>();
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    private Map<Long, String> playerTiles = new HashMap<>();
+
+    @Transient
+    private Map<Long, List<String>> playerTilesList = new HashMap<>();
+
+    public String[] getPlayerTiles(Long userId) {
+        String tiles = playerTiles.get(userId);
+        return tiles==null ? new String[]{}: tiles.split("");
+    }
+
+    public void setTilesForPlayer(Long userId, List<String> tiles) {
+        playerTilesList.put(userId,tiles);
+        String tilesAsString = "";
+        for (String tile: tiles) {
+            tilesAsString+= tile;
+        }
+        playerTiles.put(userId,tilesAsString);
+    }
 
     // Get the in-memory 2D array representation
     public String[][] getBoard() {
@@ -135,7 +148,7 @@ public class Game implements Serializable {
 
     public List<User> getUsers() { return users; }
     public void setUsers(List<User> users) { this.users = users; }
-    public void addUser(User user) { this.users.add(user); }  
+    public void addUser(User user) { this.users.add(user); }
 
     public User getHost() { return host; }
     public void setHost(User host) { this.host = host; }
@@ -182,10 +195,13 @@ public class Game implements Serializable {
         // Usage:
         // List<Character> currentLetters = List.of('A', 'B', 'C');
         // List<Character> newLetters = game.exchangeLetters(currentLetters);
+        List<Character> newLetters = drawLetters(currentLetters.size());
+
         for (char letter : currentLetters) {
+            if(letter == ' ') continue; // Skip empty letters for example for new game
             letterBag.put(letter, letterBag.getOrDefault(letter, 0) + 1);
         }
-        return drawLetters(currentLetters.size());
+        return newLetters;
     }
 }
 
