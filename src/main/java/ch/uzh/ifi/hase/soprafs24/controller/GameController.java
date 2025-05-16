@@ -17,6 +17,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import ch.uzh.ifi.hase.soprafs24.constant.UserStatus;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -107,7 +108,29 @@ public class GameController {
         return ResponseEntity.noContent().build();
     }
 
+    @ResponseStatus(HttpStatus.OK)
+    @PutMapping("/games/{id}/users/{userId}/leave")
+    public ResponseEntity<GameGetDTO> leaveGame(@PathVariable Long id, @PathVariable Long userId, @RequestHeader("Authorization") String token) {
+        Optional<User> optionalUser = userService.getUserByToken(token);
+        if (optionalUser.isEmpty()) { return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build(); }
+        User user = optionalUser.get();
 
+        Game game = gameService.getGameById(id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found"));
+
+        if (!gameService.isUserInGame(game, user)) { return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build(); }
+
+        try {
+            gameService.leaveGame(game, user);
+            userService.updateUserStatus(user, UserStatus.ONLINE);
+        } catch (UserNotFoundException | GameNotFoundException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred:\n"+e.getMessage());
+        }
+
+        return ResponseEntity.ok(DTOMapper.INSTANCE.convertEntityToGameGetDTO(game));
+    }
 
    /* @ResponseStatus(HttpStatus.OK)
     @PutMapping("/games/{id}/users/{userId}/assign")
