@@ -13,6 +13,7 @@ public class GameGetDTO {
     private boolean isHostTurn;
     private GameStatus gameStatus;
     private LocalDateTime startTime;
+    private Long surrenderId;
 
     private String[][] board;
 
@@ -46,4 +47,7 @@ public class GameGetDTO {
     public void setHostTurn(boolean hostTurn) {
         this.isHostTurn = hostTurn;
     }
+    public Long getSurrenderId() { return surrenderId; }
+    
+    public void setSurrenderId(Long surrenderId) { this.surrenderId = surrenderId; }
 }

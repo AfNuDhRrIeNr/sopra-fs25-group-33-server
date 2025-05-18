@@ -47,6 +47,8 @@ public class Game implements Serializable {
     @Transient
     private String[][] board;
 
+    private Long surrenderId;
+
     @ElementCollection(fetch = FetchType.EAGER)
     private Map<Long, Integer> playerScores = new HashMap<>();
 
@@ -202,6 +204,14 @@ public class Game implements Serializable {
             letterBag.put(letter, letterBag.getOrDefault(letter, 0) + 1);
         }
         return newLetters;
+    }
+
+    public Long getSurrenderId() {
+        return surrenderId;
+    }
+
+    public void setSurrenderId(Long surrenderId) {
+        this.surrenderId = surrenderId;
     }
 }
 

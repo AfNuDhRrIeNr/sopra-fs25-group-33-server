@@ -105,13 +105,14 @@ public class WebSocketController {
                     user.setInGame(false);
                     userRepository.saveAndFlush(user);
                 }
-                game.setGameStatus(GameStatus.TERMINATED);
-                gameRepository.saveAndFlush(game);
         
                 logger.info("Game {} has been successfully terminated.", gameId);
 
                 if (gameState.getAction().equals("SURRENDER")) {
                     gameState.setSurrenderedPlayerId(gameState.getPlayerId());
+                    game.setGameStatus(GameStatus.TERMINATED);
+                    game.setSurrenderId(gameState.getPlayerId());
+                    gameRepository.saveAndFlush(game); 
                     simpleMessagingTemplate.convertAndSend(
                             "/topic/game_states/" + gameId,
                             new MessageGameStateMessageDTO(
@@ -122,6 +123,8 @@ public class WebSocketController {
                             )
                     );
                 } else {
+                    game.setGameStatus(GameStatus.TERMINATED);
+                    gameRepository.saveAndFlush(game);
                     simpleMessagingTemplate.convertAndSend(
                             "/topic/game_states/" + gameId,
                             new MessageGameStateMessageDTO(
