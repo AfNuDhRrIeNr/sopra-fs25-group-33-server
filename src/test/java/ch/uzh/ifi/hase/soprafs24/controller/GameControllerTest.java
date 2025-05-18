@@ -8,12 +8,14 @@ import ch.uzh.ifi.hase.soprafs24.entity.User;
 import ch.uzh.ifi.hase.soprafs24.enums.InvitationStatus;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.GameGetDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.GameInvitationPostDTO;
+import ch.uzh.ifi.hase.soprafs24.rest.dto.GameInvitationPutDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.GamePostDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.dto.GamePutDTO;
 import ch.uzh.ifi.hase.soprafs24.rest.mapper.DTOMapper;
 import ch.uzh.ifi.hase.soprafs24.service.GameInvitationService;
 import ch.uzh.ifi.hase.soprafs24.service.GameService;
 import ch.uzh.ifi.hase.soprafs24.service.UserService;
+import ch.uzh.ifi.hase.soprafs24.constant.errors.GameInvitationNotFoundException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
@@ -326,4 +328,54 @@ public class GameControllerTest {
                 String.format("The request body could not be created.%s", e.toString()));
         }
     }
+
+    @Test
+    void updateGame_unauthorized_returns401() throws Exception {
+        GamePutDTO gamePutDTO = new GamePutDTO();
+        gamePutDTO.setGameStatus(GameStatus.CREATED);
+
+        given(userService.getUserByToken("Bearer test-token")).willReturn(Optional.empty());
+
+        MockHttpServletRequestBuilder putRequest = put("/games/1")
+            .contentType(MediaType.APPLICATION_JSON)
+            .header("Authorization", "Bearer test-token")
+            .content(asJsonString(gamePutDTO));
+
+        mockMvc.perform(putRequest)
+            .andExpect(status().isUnauthorized());
+    }
+
+
+    @Test
+    void getGameInvitations_noInvitations_returnsEmptyList() throws Exception {
+        User user = new User();
+        user.setId(1L);
+
+        given(userService.getUserByToken("test-token")).willReturn(Optional.of(user));
+        given(gameInvitationService.getGameInvitationsByTarget(user)).willReturn(List.of());
+
+        mockMvc.perform(get("/games/invitations/1")
+                .header("Authorization", "test-token"))
+            .andExpect(status().isOk())
+            .andExpect(content().json("[]"));
+    }
+
+    @Test
+    void updateGameInvitation_invitationNotFound_returnsNotFound() throws Exception {
+        User user = new User();
+        user.setId(1L);
+
+        GameInvitationPutDTO dto = new GameInvitationPutDTO();
+        dto.setStatus(InvitationStatus.ACCEPTED);
+
+        given(userService.getUserByToken("test-token")).willReturn(Optional.of(user));
+        given(gameInvitationService.getGameInvitationById(anyLong()))
+            .willThrow(new GameInvitationNotFoundException("not found"));
+
+        mockMvc.perform(put("/games/invitations/1")
+                .header("Authorization", "test-token")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(asJsonString(dto)))
+            .andExpect(status().isNotFound());
+    }   
 }
