@@ -63,6 +63,16 @@ public class GameService {
         return gameRepository.saveAndFlush(game);
     }
 
+    public Game leaveGame(Game game, User user) throws GameNotFoundException, UserNotFoundException {
+        if(game == null || game.getId() == null ||gameRepository.findById(game.getId()).isEmpty()) throw new GameNotFoundException("Game not found");
+        if(user == null || user.getId() == null ||userRepository.findById(user.getId()).isEmpty()) throw new UserNotFoundException("User not found");
+        if(game.getUsers().contains(user)) game.removeUser(user);
+        if(!game.getUsers().isEmpty()) {
+            game.setHost(game.getUsers().get(0));
+        }
+        return gameRepository.saveAndFlush(game);
+    }
+
     public boolean isUserInGame(Game game, User user) {
         if(game == null || game.getId() == null ||gameRepository.findById(game.getId()).isEmpty()) return false;
         if(user == null || user.getId() == null ||userRepository.findById(user.getId()).isEmpty()) return false;

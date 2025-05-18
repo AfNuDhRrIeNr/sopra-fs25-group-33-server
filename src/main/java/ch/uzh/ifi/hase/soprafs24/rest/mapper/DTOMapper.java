@@ -50,6 +50,7 @@ public interface DTOMapper {
   @Mapping(source = "gameStatus", target = "gameStatus")
   @Mapping(source = "hostTurn", target = "hostTurn") // Needs to be hostTurn instead of IsHostTurn (weird JPA internal implementation)
   @Mapping(source = "startTime", target = "startTime")
+  @Mapping(source = "playerScores", target = "playerScores")
   GameGetDTO convertEntityToGameGetDTO(Game game);
 
 

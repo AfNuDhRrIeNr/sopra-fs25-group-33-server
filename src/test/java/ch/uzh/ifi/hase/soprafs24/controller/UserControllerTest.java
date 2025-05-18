@@ -645,4 +645,48 @@ public class UserControllerTest {
                 .andExpect(jsonPath("$.username", is(user.getUsername())))
                 .andExpect(jsonPath("$.status", is(UserStatus.OFFLINE.toString())));
     }
+
+    @Test
+public void registerUser_emptyUsername_returnsBadRequest400() throws Exception {
+    // given
+    UserPostDTO userPostDTO = new UserPostDTO();
+    userPostDTO.setUsername("");  // Empty username
+    userPostDTO.setPassword("testPassword");
+
+    // Mock service to throw BAD_REQUEST for empty username
+    Mockito.doThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Username cannot be empty"))
+        .when(userService).createUser(Mockito.any());
+
+    // when
+    MockHttpServletRequestBuilder postRequest = post("/users/register")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(asJsonString(userPostDTO));
+
+    // then
+    mockMvc.perform(postRequest)
+        .andExpect(status().isBadRequest())
+        .andExpect(status().reason("Username cannot be empty"));
+}
+
+@Test
+public void registerUser_emptyPassword_returnsBadRequest400() throws Exception {
+    // given
+    UserPostDTO userPostDTO = new UserPostDTO();
+    userPostDTO.setUsername("testUsername");
+    userPostDTO.setPassword("");  // Empty password
+
+    // Mock service to throw BAD_REQUEST for empty password
+    Mockito.doThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Password cannot be empty"))
+        .when(userService).createUser(Mockito.any());
+
+    // when
+    MockHttpServletRequestBuilder postRequest = post("/users/register")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(asJsonString(userPostDTO));
+
+    // then
+    mockMvc.perform(postRequest)
+        .andExpect(status().isBadRequest())
+        .andExpect(status().reason("Password cannot be empty"));
+}
 }
