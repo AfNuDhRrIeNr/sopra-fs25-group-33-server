@@ -5,6 +5,7 @@ import ch.uzh.ifi.hase.soprafs24.entity.User;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.*;
 
 public class GameGetDTO {
     private Long id;
@@ -14,6 +15,7 @@ public class GameGetDTO {
     private GameStatus gameStatus;
     private LocalDateTime startTime;
     private Long surrenderId;
+    private Map<Long, Integer> playerScores = new HashMap<>();
 
     private String[][] board;
 
@@ -31,6 +33,13 @@ public class GameGetDTO {
 
     public LocalDateTime getStartTime() { return startTime; }
     public void setStartTime(LocalDateTime startTime) { this.startTime = startTime; }
+
+    public Map<Long, Integer> getPlayerScores() {
+        return Collections.unmodifiableMap(playerScores);
+    }
+    public void setPlayerScores(Map<Long, Integer> playerScores) {
+        this.playerScores = playerScores;
+    }
 
     public String[][] getBoard() {
         return board;

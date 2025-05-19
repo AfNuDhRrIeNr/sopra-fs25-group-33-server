@@ -42,6 +42,14 @@ public class UserService {
 
   public User createUser(User newUser) {
 
+    if (newUser.getUsername() == null || newUser.getUsername().trim().isEmpty()) {
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Username cannot be empty");
+    }
+    
+    if (newUser.getPassword() == null || newUser.getPassword().trim().isEmpty()) {
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Password cannot be empty");
+    }
+
     //first checks if username already taken
     checkIfUserExists(newUser);
     newUser.setToken(UUID.randomUUID().toString());
