@@ -108,6 +108,7 @@ public class GameController {
         return ResponseEntity.noContent().build();
     }
 
+
     @ResponseStatus(HttpStatus.OK)
     @PutMapping("/games/{id}/users/{userId}/leave")
     public ResponseEntity<GameGetDTO> leaveGame(@PathVariable Long id, @PathVariable Long userId, @RequestHeader("Authorization") String token) {
@@ -132,27 +133,6 @@ public class GameController {
         return ResponseEntity.ok(DTOMapper.INSTANCE.convertEntityToGameGetDTO(game));
     }
 
-   /* @ResponseStatus(HttpStatus.OK)
-    @PutMapping("/games/{id}/users/{userId}/assign")
-    public GamePutDTO assignTiles(@PathVariable Long id, @PathVariable Long userId, @RequestParam int count) {
-        Game game = gameService.getGameById(id)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found"));
-        List<Character> newTiles = gameService.assignNewLetters(game, count, userId, new String[0]);
-        GamePutDTO response = new GamePutDTO();
-        response.setNewTiles(newTiles);
-        return response;
-    }
-
-   /* @ResponseStatus(HttpStatus.OK)
-    @PutMapping("/games/{id}/users/{userId}/exchange")
-    public GamePutDTO exchangeTiles(@PathVariable Long id, @PathVariable Long userId, @RequestBody List<Character> tilesForExchange) {
-        Game game = gameService.getGameById(id)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found"));
-        List<Character> newTiles = gameService.exchangeTiles(game, tilesForExchange, userId);
-        GamePutDTO response = new GamePutDTO();
-        response.setNewTiles(newTiles);
-        return response;
-    }*/
 
     @GetMapping("/games/{id}/letters/{letter}")
     public int getRemainingLetters(@PathVariable Long id, @PathVariable char letter) {
@@ -214,10 +194,10 @@ public class GameController {
         if(token == null || token.isEmpty() || userService.getUserByToken(token).isEmpty()) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token: User not found");
         if(invitationId == null || invitationId.isEmpty()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invitation ID cannot be null or empty");
         if(gameInvitationPutDTO == null || gameInvitationPutDTO.getStatus() == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invitation status cannot be null");
-        if(userService.getUserByToken(token).get().getId() != gameInvitationService.getGameInvitationById(Long.valueOf(invitationId)).getTarget().getId()) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token: User not authorized to access this resource");
 
         try {
             GameInvitation gameInvitation = gameInvitationService.getGameInvitationById(Long.valueOf(invitationId));
+            if(userService.getUserByToken(token).get().getId() != gameInvitationService.getGameInvitationById(Long.valueOf(invitationId)).getTarget().getId()) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token: User not authorized to access this resource");
             gameInvitationService.updateGameInvitationStatus(gameInvitation, gameInvitationPutDTO.getStatus());
         }
         catch (GameInvitationNotFoundException | GameNotFoundException | UserNotFoundException e) {
