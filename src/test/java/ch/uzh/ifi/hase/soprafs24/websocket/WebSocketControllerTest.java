@@ -2,6 +2,7 @@ package ch.uzh.ifi.hase.soprafs24.websocket;
 
 import ch.uzh.ifi.hase.soprafs24.constant.MessageStatus;
 import ch.uzh.ifi.hase.soprafs24.constant.MoveType;
+import ch.uzh.ifi.hase.soprafs24.constant.errors.GameNotFoundException;
 import ch.uzh.ifi.hase.soprafs24.entity.Game;
 import ch.uzh.ifi.hase.soprafs24.entity.User;
 import ch.uzh.ifi.hase.soprafs24.repository.GameRepository;
@@ -200,6 +201,37 @@ public class WebSocketControllerTest {
 
         assertEquals(msg1.getMessageStatus(), MessageStatus.SUCCESS, "Status should be SUCCESS");
         assertEquals(msg2.getMessageStatus(), MessageStatus.SUCCESS, "Status should be SUCCESS");
+    }
+
+    @Test
+    void handleGameStates_invalidGameState_returnsErrorMessage() {
+        // Assign
+        GameStateDTO gameState = new GameStateDTO();
+        gameState.setId(1L);
+
+        // Act
+        MessageGameStateMessageDTO msg = webSocketController.handleGameStates("1", gameState);
+
+        // Assert
+        assertNotNull(msg);
+        assertTrue(msg.getMessageStatus() == MessageStatus.ERROR);
+        assertTrue(msg.getMessage().contains("missing"));
+        assertEquals(msg.getGameId(), gameState.getId());
+    }
+
+    @Test
+    void handleGameStates_GameStateAndGameIdNotEqual_returnsErrorMessage() {
+        // Assign
+        GameStateDTO gameState = initializeGameStateDTO();
+
+        // Act
+        MessageGameStateMessageDTO msg = webSocketController.handleGameStates("10", gameState);
+
+        // Assert
+        assertNotNull(msg);
+        assertTrue(msg.getMessageStatus() == MessageStatus.ERROR);
+        assertTrue(msg.getMessage().equals("The game id of the object and destination are not equal!"));
+        assertNotEquals(msg.getGameId(), gameState.getId());
     }
 
     @Test
@@ -562,6 +594,92 @@ public class WebSocketControllerTest {
             eq("/topic/game_states/" + gameId),
             any(MessageGameStateMessageDTO.class)
         );
+    }
+
+    @Test
+    void handleGameState_validGameStateSkip_worksCorrectly() throws GameNotFoundException {
+        // Assign
+        User host = new User();
+        host.setId(2L);
+
+        User opponent = new User();
+        opponent.setId(3L);
+
+        Game game = new Game();
+        game.setId(1L);
+        game.setGameStatus(GameStatus.ONGOING);
+        game.addUser(host); game.addUser(opponent);
+        game.setHost(host);
+
+        GameStateDTO gameState = initializeGameStateDTO();
+        gameState.setAction("SKIP");
+        when(gameService.skipTurn(game.getId(), gameState.getPlayerId())).thenReturn(true);
+        when(gameRepository.findByIdWithUsers(game.getId())).thenReturn(Optional.of(game));
+
+        // Act
+        MessageGameStateMessageDTO msg = webSocketController.handleGameStates("1", gameState);
+
+        // Assert
+        assertNotNull(msg);
+        assertEquals(game.getId(), msg.getGameId());
+        assertTrue(msg.getGameState().getPlayerId() == 2L);
+        assertEquals(MessageStatus.SUCCESS, msg.getMessageStatus());
+    }
+
+    @Test
+    void handleSkip_GameNotFound_returnsError() throws GameNotFoundException {
+        // Assign
+        Long gameId = 1L;
+        Game game = new Game();
+        game.setId(gameId);
+        GameStateDTO gameState = initializeGameStateDTO();
+        gameState.setAction("SKIP");
+
+        User host = new User(); host.setId(24523L);
+        game.setHost(host); game.addUser(host);
+
+        User opponent = new User(); opponent.setId(123L); game.addUser(opponent);
+
+        when(gameService.skipTurn(gameId, 123L)).thenThrow(new GameNotFoundException("Game not found"));
+        // Act
+        MessageGameStateMessageDTO result = webSocketController.handleGameStates(gameId.toString(), gameState);
+
+        // Assert
+        assertNotNull(result);
+        assertTrue(result.getMessageStatus() == MessageStatus.ERROR);
+        assertTrue(result.getMessage().contains("Game not found"));
+        assertTrue(result.getGameState().equals(gameState));
+    }
+
+    @Test
+    void handleSkip_UnexpectedError_returnsError() throws GameNotFoundException {
+        // Assign
+        Game game = new Game();
+        Long gameId = 1L;
+        game.setId(gameId);
+        GameStateDTO gameState = initializeGameStateDTO();
+        gameState.setAction("SKIP");
+
+        when(gameService.skipTurn(gameId, 123L)).thenThrow(new RuntimeException("Unexpected error"));
+        when(gameRepository.findByIdWithUsers(gameId)).thenReturn(Optional.of(game));
+
+        // Act
+        MessageGameStateMessageDTO result = webSocketController.handleGameStates(gameId.toString(), gameState);
+
+        // Assert
+        assertNotNull(result);
+        assertTrue(result.getMessageStatus() == MessageStatus.ERROR);
+        assertTrue(result.getMessage().contains("Unexpected error"));
+    }
+
+    GameStateDTO initializeGameStateDTO() {
+        GameStateDTO gameState = new GameStateDTO();
+        gameState.setId(1L);
+        gameState.setAction("FETCH_GAME_STATE");
+        gameState.setUserTiles(new String[]{});
+        gameState.setToken("test-token");
+        gameState.setBoard(new String[15][15]);
+        return gameState;
     }
 
 }

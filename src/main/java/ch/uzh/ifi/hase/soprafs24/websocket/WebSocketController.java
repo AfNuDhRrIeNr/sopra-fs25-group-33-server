@@ -69,7 +69,12 @@ public class WebSocketController {
             );
         }
         if(gameState.getId() != Long.valueOf(gameId)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN,"The game id of the object and destination are not equal!");
+            return new MessageGameStateMessageDTO(
+                    Long.valueOf(gameId),
+                    MessageStatus.ERROR,
+                    "The game id of the object and destination are not equal!",
+                    null
+            );
         }
 
         // Check if it's a validation request
@@ -385,7 +390,6 @@ public class WebSocketController {
             logger.info("Switching Turn for game: '{}'", gameId);
             // Skip the turn
             boolean isHostTurn = gameService.skipTurn(Long.valueOf(gameId), gameState.getPlayerId());
-            //gameState.setUserTiles(new String[7]);
             Optional<Game> optional = gameRepository.findByIdWithUsers(Long.valueOf(gameId));
             if(optional.isEmpty()) return new MessageGameStateMessageDTO(
                     Long.valueOf(gameId),
@@ -410,17 +414,14 @@ public class WebSocketController {
                     "Game not found: " + e.getMessage(),
                     gameState
             );
-        } catch (ResponseStatusException e) {
-            logger.error("Error processing turn skip: {}", e.getReason());
+        } catch (Exception e) {
+            logger.info("Unexpected error: {}", e.getMessage());
             return new MessageGameStateMessageDTO(
                     Long.valueOf(gameId),
                     MessageStatus.ERROR,
-                    "Error skipping turn: " + e.getMessage(),
+                    "Unexpected error: " + e.getMessage(),
                     gameState
             );
-        } catch (Exception e) {
-            logger.info("Unexpected error: {}", e.getMessage());
-            return null;
         }
     }
 
