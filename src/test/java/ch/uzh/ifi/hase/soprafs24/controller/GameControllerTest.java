@@ -31,15 +31,18 @@ import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.Optional;
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.ArgumentMatchers.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -202,10 +205,10 @@ public class GameControllerTest {
         GameInvitationPostDTO dto = new GameInvitationPostDTO();
         dto.setTargetUsername(target.getUsername()); dto.setGameId(1L);
 
-        Mockito.when(userService.getUserByToken("token")).thenReturn(Optional.of(sender));
-        Mockito.when(userService.getUserByUsername(target.getUsername())).thenReturn(target);
-        Mockito.when(gameService.getGameById(1L)).thenReturn(Optional.of(game));
-        Mockito.when(gameInvitationService.createGameInvitation(any(), any(), any())).thenReturn(invitation);
+        when(userService.getUserByToken("token")).thenReturn(Optional.of(sender));
+        when(userService.getUserByUsername(target.getUsername())).thenReturn(target);
+        when(gameService.getGameById(1L)).thenReturn(Optional.of(game));
+        when(gameInvitationService.createGameInvitation(any(), any(), any())).thenReturn(invitation);
 
         mockMvc.perform(post("/games/invitations")
                         .header("Authorization", "token")
@@ -217,7 +220,7 @@ public class GameControllerTest {
 
     @Test
     void createGameInvitation_missingToken_returnsUnauthorized() throws Exception {
-        Mockito.when(userService.getUserByToken(any())).thenReturn(Optional.empty());
+        when(userService.getUserByToken(any())).thenReturn(Optional.empty());
 
         mockMvc.perform(post("/games/invitations")
                         .header("Authorization", "fasdfad")
@@ -232,9 +235,9 @@ public class GameControllerTest {
         GameInvitationPostDTO dto = new GameInvitationPostDTO();
         dto.setTargetUsername(sender.getUsername()); dto.setGameId(1L);
 
-        Mockito.when(userService.getUserByToken("token")).thenReturn(Optional.of(sender));
-        Mockito.when(userService.getUserById(1L)).thenReturn(Optional.of(sender));
-        Mockito.when(userService.getUserByUsername(sender.getUsername())).thenReturn(sender);
+        when(userService.getUserByToken("token")).thenReturn(Optional.of(sender));
+        when(userService.getUserById(1L)).thenReturn(Optional.of(sender));
+        when(userService.getUserByUsername(sender.getUsername())).thenReturn(sender);
 
         mockMvc.perform(post("/games/invitations")
                         .header("Authorization", "token")
@@ -288,7 +291,7 @@ public class GameControllerTest {
         List<User> users = new ArrayList<>();
         users.add(user1);
         users.add(user2);
-        game.setUsers(users); 
+        game.setUsers(users);
 
         given(userService.getUserByToken("test-token")).willReturn(Optional.of(user1));
         given(gameService.getGameById(1L)).willReturn(Optional.of(game));
@@ -300,33 +303,83 @@ public class GameControllerTest {
 
     @Test
     void deleteGame_invalidToken_returnsUnauthorized() throws Exception {
-    
+
         given(userService.getUserByToken("invalid-token")).willReturn(Optional.empty());
 
         mockMvc.perform(delete("/games/1")
-                .header("Authorization", "invalid-token"))
-            .andExpect(status().isUnauthorized());
+                        .header("Authorization", "invalid-token"))
+                .andExpect(status().isUnauthorized());
     }
+
+
     @Test
-    void getRemainingLetters_returnsCount() throws Exception {
-        Game game = Mockito.mock(Game.class);
-        Mockito.when(gameService.getGameById(1L)).thenReturn(Optional.of(game));
-        Mockito.when(gameService.countLettersInBag(game, 'A')).thenReturn(5);
+    void getRemainingLetters_validRequestOpponentNoLetters_returnsRemainingLetters() throws Exception {
+        // Arrange
+        Game game = new Game();
+        game.setId(1L);
+        game.setTilesForPlayer(12345L, List.of("A", "B", "C", "D"));
 
-        mockMvc.perform(get("/games/1/letters/A"))
+        User user = new User(); user.setId(2L);
+        User opponent = new User(); opponent.setId(12345L);
+        game.addUser(opponent); game.addUser(user);
+
+        given(gameService.getGameById(1L)).willReturn(Optional.of(game));
+        given(userService.getUserByToken("Bearer test-token")).willReturn(Optional.of(user));
+        given(gameService.countLettersInBag(game, 'O')).willReturn(8);
+
+        // Act & Assert
+        mockMvc.perform(get("/games/1/letters/O")
+                .header("Authorization", "Bearer test-token"))
                 .andExpect(status().isOk())
-                .andExpect(content().string("5"));
+                .andExpect(jsonPath("$", is(8)));
     }
 
+    @Test
+    void getRemainingLetters_invalidGameId_returnsNotFound() throws Exception {
+        // Arrange
+        given(gameService.getGameById(1L)).willReturn(Optional.empty());
 
+        // Act & Assert
+        mockMvc.perform(get("/games/1/letters/O")
+                    .header("Authorization", "Bearer test-token"))
+                    .andExpect(status().isNotFound())
+                    .andExpect(status().reason(is("Game not found")));
+    }
 
-    private String asJsonString(final Object object) {
-        try {
-            return new ObjectMapper().writeValueAsString(object);
-        } catch (JsonProcessingException e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                String.format("The request body could not be created.%s", e.toString()));
-        }
+    @Test
+    void getRemainingLetters_invalidToken_returnsUnauthorized() throws Exception {
+        // Arrange
+        Game game = new Game();
+        given(gameService.getGameById(1L)).willReturn(Optional.of(game));
+        given(userService.getUserByToken("invalid-token")).willReturn(Optional.empty());
+
+        // Act & Assert
+        mockMvc.perform(get("/games/1/letters/O")
+                .header("Authorization", "invalid-token"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(status().reason(containsString("Invalid token: User not found")));
+    }
+
+    @Test
+    void getRemainingLetters_validRequestOpponentHasLetters_returnsCorrectValue() throws Exception {
+        // Arrange
+        Game game = new Game();
+        game.setId(1L);
+        game.setTilesForPlayer(12345L, List.of("A", "B", "A", "D"));
+
+        User user = new User(); user.setId(2L);
+        User opponent = new User(); opponent.setId(12345L);
+        game.addUser(user); game.addUser(opponent);
+
+        given(gameService.getGameById(1L)).willReturn(Optional.of(game));
+        given(userService.getUserByToken("Bearer test-token")).willReturn(Optional.of(user));
+        given(gameService.countLettersInBag(game, 'A')).willReturn(5);
+
+        // Act & Assert
+        mockMvc.perform(get("/games/1/letters/A")
+                .header("Authorization", "Bearer test-token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", is(7)));
     }
 
     @Test
@@ -377,5 +430,14 @@ public class GameControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(asJsonString(dto)))
             .andExpect(status().isNotFound());
-    }   
+    }
+
+    private String asJsonString(final Object object) {
+        try {
+            return new ObjectMapper().writeValueAsString(object);
+        } catch (JsonProcessingException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    String.format("The request body could not be created.%s", e.toString()));
+        }
+    }
 }

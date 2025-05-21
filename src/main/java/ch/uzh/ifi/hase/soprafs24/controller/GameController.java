@@ -20,6 +20,7 @@ import org.springframework.web.server.ResponseStatusException;
 import ch.uzh.ifi.hase.soprafs24.constant.UserStatus;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -135,10 +136,18 @@ public class GameController {
 
 
     @GetMapping("/games/{id}/letters/{letter}")
-    public int getRemainingLetters(@PathVariable Long id, @PathVariable char letter) {
+    public int getRemainingLetters(@PathVariable Long id, @PathVariable char letter, @RequestHeader("Authorization") String token) {
         Game game = gameService.getGameById(id)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found"));
-        return gameService.countLettersInBag(game, letter);
+        User user = userService.getUserByToken(token)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token: User not found"));
+        User opponent = game.getUsers()
+            .stream()
+            .filter(u -> !u.getId().equals(user.getId()))
+            .findFirst()
+            .orElse(null);
+        return (int) (gameService.countLettersInBag(game, letter) + (opponent == null ? 0 : Arrays.stream(game.getPlayerTiles(opponent.getId())).toList()
+                        .stream().filter(tile -> tile.equals(String.valueOf(letter))).count()));
     }
 
     @ResponseStatus(HttpStatus.CREATED)

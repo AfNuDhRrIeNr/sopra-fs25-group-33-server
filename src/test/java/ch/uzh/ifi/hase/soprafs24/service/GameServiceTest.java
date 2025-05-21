@@ -18,6 +18,7 @@ import org.mockito.MockitoAnnotations;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -257,6 +258,28 @@ public class GameServiceTest {
 
         assertEquals(existing, game.getStartTime());
         verify(gameRepository, never()).save(game);
+    }
+
+    @Test
+    void countLettersInBag() {
+        // Arrange
+        when(gameRepository.findById(testGame.getId())).thenReturn(Optional.of(testGame));
+        testGame.setLetterBag(Map.of(
+                'A', 5,
+                'B', 2,
+                'C', 3
+        ));
+        // Act
+        int letterCountA = gameService.countLettersInBag(testGame, 'A');
+        int letterCountB = gameService.countLettersInBag(testGame, 'B');
+        int letterCountC = gameService.countLettersInBag(testGame, 'C');
+        int letterCountD = gameService.countLettersInBag(testGame, 'D'); // Letter not in bag
+
+        // Assert
+        assertEquals(5, letterCountA);
+        assertEquals(2, letterCountB);
+        assertEquals(3, letterCountC);
+        assertEquals(0, letterCountD); // Default value for missing letter
     }
 
 }
