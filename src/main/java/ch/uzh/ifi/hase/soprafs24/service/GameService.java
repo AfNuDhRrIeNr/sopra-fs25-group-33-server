@@ -89,24 +89,6 @@ public class GameService {
         return gameRepository.saveAndFlush(game);
     }
 
-    /*public List<Character> exchangeTiles(Game game, List<Character> tilesToExchange, Long userId) {
-        List<Character> exchangedTiles = game.exchangeTiles(tilesToExchange);
-
-        // Corrected conversion from array to list
-        String[] playerTiles = game.getPlayerTiles(userId);
-        List<String> allNewTiles = new ArrayList<>(Arrays.asList(playerTiles));
-
-
-        for (int i = 0; i < tilesToExchange.size(); i++) {
-            Character oldTile = tilesToExchange.get(i);
-            int j = allNewTiles.indexOf(String.valueOf(oldTile));
-            allNewTiles.add(j, String.valueOf(exchangedTiles.get(i)));
-        }
-
-        game.setTilesForPlayer(userId, allNewTiles);
-        gameRepository.saveAndFlush(game);
-        return exchangedTiles;
-    }*/
     public void exchangeTiles(Game game, String[] userTiles, Long userId) {
         List<Character> exchangedTiles = game.exchangeTiles(Arrays.stream(userTiles).map(s -> s.charAt(0)).collect(toList()));
         List<String> allNewTiles = new ArrayList<>(Arrays.stream(game.getPlayerTiles(userId)).toList());
