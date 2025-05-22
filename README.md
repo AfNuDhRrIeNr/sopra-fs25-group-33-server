@@ -25,9 +25,9 @@ REST endpoints to handle out of game interactions.
 To run, our project needs the [Server repository](https://github.com/AfNuDhRrIeNr/sopra-fs25-group-33-server) and the [Client repository](https://github.com/AfNuDhRrIeNr/sopra-fs25-group-33-client). 
 <br>After having cloned these two repositories,
 follow the respective
-[Server README.md](https://github.com/HASEL-UZH/sopra-fs25-template-server/blob/main/README.md)
-and [Client README.md](https://github.com/HASEL-UZH/sopra-fs25-template-client)
-from the templates used. <br> With that both the server and the client should be
+[Server Setup.md](https://github.com/AfNuDhRrIeNr/sopra-fs25-group-33-server/blob/main/Setup.md)
+and [Client Setup.md](https://github.com/AfNuDhRrIeNr/sopra-fs25-group-33-client/blob/main/Setup.md)
+copied from the templates used. <br> With that both the server and the client should be
 running locally. <br> Releases can be pushed onto a new branch and then
 approval for a merge can be requested.
 
