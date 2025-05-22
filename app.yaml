@@ -2,7 +2,12 @@
 # https://cloud.google.com/appengine/docs/standard
 
 runtime: java17
-instance_class: F4
+env: flex
+
+resources:
+  cpu: 2
+  memory_gb: 4
+  disk_size_gb: 10
 
 automatic_scaling:
   max_instances: 1
