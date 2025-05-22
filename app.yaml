@@ -10,5 +10,5 @@ resources:
   disk_size_gb: 10
 
 automatic_scaling:
-  min_instances: 1
-  max_instances: 1
+  min_num_instances: 1
+  max_num_instances: 1
