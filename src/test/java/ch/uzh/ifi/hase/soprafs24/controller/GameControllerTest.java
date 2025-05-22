@@ -16,6 +16,8 @@ import ch.uzh.ifi.hase.soprafs24.service.GameInvitationService;
 import ch.uzh.ifi.hase.soprafs24.service.GameService;
 import ch.uzh.ifi.hase.soprafs24.service.UserService;
 import ch.uzh.ifi.hase.soprafs24.constant.errors.GameInvitationNotFoundException;
+import ch.uzh.ifi.hase.soprafs24.constant.errors.UserNotFoundException;
+import ch.uzh.ifi.hase.soprafs24.constant.errors.GameNotFoundException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
@@ -108,6 +110,26 @@ public class GameControllerTest {
     }
 
     @Test
+    void createGame_userNotFoundException_returnsNotFound() throws Exception {
+        given(userService.getUserByToken("token")).willReturn(Optional.of(new User()));
+        doThrow(new UserNotFoundException("User not found")).when(gameService).createGame(any());
+
+        mockMvc.perform(post("/games")
+                .header("Authorization", "token"))
+            .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void createGame_unexpectedException_returnsInternalServerError() throws Exception {
+        given(userService.getUserByToken("token")).willReturn(Optional.of(new User()));
+        doThrow(new RuntimeException("Unexpected")).when(gameService).createGame(any());
+
+        mockMvc.perform(post("/games")
+                .header("Authorization", "token"))
+            .andExpect(status().isInternalServerError());
+    }
+
+    @Test
     public void getGameById_validId_gameReturned() throws Exception {
 
         User user = new User();
@@ -195,6 +217,26 @@ public class GameControllerTest {
     }
 
     @Test
+    void updateGame_unexpectedException_returnsBadRequest() throws Exception {
+        User user = new User(); user.setId(1L);
+        Game game = new Game(); game.setId(1L); game.addUser(user);
+
+        GamePutDTO dto = new GamePutDTO();
+        dto.setGameStatus(GameStatus.CREATED);
+
+        given(userService.getUserByToken("token")).willReturn(Optional.of(user));
+        given(gameService.getGameById(1L)).willReturn(Optional.of(game));
+        given(gameService.isUserInGame(game, user)).willReturn(true);
+        doThrow(new RuntimeException("Unexpected")).when(gameService).updateGameStatus(any(), any());
+
+        mockMvc.perform(put("/games/1")
+                .header("Authorization", "token")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(new ObjectMapper().writeValueAsString(dto)))
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void createGameInvitation_validRequest_returnsCreated() throws Exception {
         User sender = new User(); sender.setId(1L);
         User target = new User(); target.setId(2L); target.setUsername("fasdfasdfa");
@@ -244,6 +286,66 @@ public class GameControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(new ObjectMapper().writeValueAsString(dto)))
                 .andExpect(status().isConflict());
+    }
+
+    @Test
+    void createGameInvitation_gameNotFound_returnsNotFound() throws Exception {
+        User sender = new User(); sender.setId(1L);
+        GameInvitationPostDTO dto = new GameInvitationPostDTO();
+        dto.setTargetUsername("target");
+        dto.setGameId(1L);
+
+        given(userService.getUserByToken("token")).willReturn(Optional.of(sender));
+        given(userService.getUserByUsername("target")).willReturn(new User());
+        given(gameService.getGameById(1L)).willReturn(Optional.of(new Game()));
+        doThrow(new GameNotFoundException("Game not found"))
+            .when(gameInvitationService).createGameInvitation(any(), any(), any());
+
+        mockMvc.perform(post("/games/invitations")
+                .header("Authorization", "token")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(new ObjectMapper().writeValueAsString(dto)))
+            .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void createGameInvitation_illegalArgument_returnsConflict() throws Exception {
+        User sender = new User(); sender.setId(1L);
+        GameInvitationPostDTO dto = new GameInvitationPostDTO();
+        dto.setTargetUsername("target");
+        dto.setGameId(1L);
+
+        given(userService.getUserByToken("token")).willReturn(Optional.of(sender));
+        given(userService.getUserByUsername("target")).willReturn(new User());
+        given(gameService.getGameById(1L)).willReturn(Optional.of(new Game()));
+        doThrow(new IllegalArgumentException("Already invited"))
+            .when(gameInvitationService).createGameInvitation(any(), any(), any());
+
+        mockMvc.perform(post("/games/invitations")
+                .header("Authorization", "token")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(new ObjectMapper().writeValueAsString(dto)))
+            .andExpect(status().isConflict());
+    }
+
+    @Test
+    void createGameInvitation_unexpectedException_returnsInternalServerError() throws Exception {
+        User sender = new User(); sender.setId(1L);
+        GameInvitationPostDTO dto = new GameInvitationPostDTO();
+        dto.setTargetUsername("target");
+        dto.setGameId(1L);
+
+        given(userService.getUserByToken("token")).willReturn(Optional.of(sender));
+        given(userService.getUserByUsername("target")).willReturn(new User());
+        given(gameService.getGameById(1L)).willReturn(Optional.of(new Game()));
+        doThrow(new RuntimeException("Unexpected error"))
+            .when(gameInvitationService).createGameInvitation(any(), any(), any());
+
+        mockMvc.perform(post("/games/invitations")
+                .header("Authorization", "token")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(new ObjectMapper().writeValueAsString(dto)))
+            .andExpect(status().isInternalServerError());
     }
 
     @Test
@@ -430,6 +532,237 @@ public class GameControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(asJsonString(dto)))
             .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void updateGameInvitation_missingToken_returnsUnauthorized() throws Exception {
+        GameInvitationPutDTO dto = new GameInvitationPutDTO();
+        dto.setStatus(InvitationStatus.ACCEPTED);
+
+        given(userService.getUserByToken("")).willReturn(Optional.empty());
+
+        mockMvc.perform(put("/games/invitations/1")
+                .header("Authorization", "")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(asJsonString(dto)))
+            .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void updateGameInvitation_nullInvitationId_returnsBadRequest() throws Exception {
+        User user = new User(); user.setId(1L);
+        GameInvitationPutDTO dto = new GameInvitationPutDTO();
+        dto.setStatus(InvitationStatus.ACCEPTED);
+
+        given(userService.getUserByToken("test-token")).willReturn(Optional.of(user));
+
+        mockMvc.perform(put("/games/invitations/")
+                .header("Authorization", "test-token")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(asJsonString(dto)))
+            .andExpect(status().isBadRequest()); // No path variable, so 404 from Spring
+        // To test empty string, you would need to call with "/games/invitations/" which is not a valid endpoint.
+    }
+
+    @Test
+    void updateGameInvitation_nullStatus_returnsBadRequest() throws Exception {
+        User user = new User(); user.setId(1L);
+        GameInvitationPutDTO dto = new GameInvitationPutDTO(); // status is null
+
+        given(userService.getUserByToken("test-token")).willReturn(Optional.of(user));
+
+        mockMvc.perform(put("/games/invitations/1")
+                .header("Authorization", "test-token")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(asJsonString(dto)))
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void updateGameInvitation_gameNotFound_returnsNotFound() throws Exception {
+        User user = new User(); user.setId(1L);
+        GameInvitation invitation = new GameInvitation(); invitation.setId(1L); invitation.setTarget(user);
+
+        GameInvitationPutDTO dto = new GameInvitationPutDTO();
+        dto.setStatus(InvitationStatus.ACCEPTED);
+
+        given(userService.getUserByToken("test-token")).willReturn(Optional.of(user));
+        given(gameInvitationService.getGameInvitationById(1L)).willReturn(invitation);
+        doThrow(new GameNotFoundException("Game not found")).when(gameInvitationService).updateGameInvitationStatus(any(), any());
+
+        mockMvc.perform(put("/games/invitations/1")
+                .header("Authorization", "test-token")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(asJsonString(dto)))
+            .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void updateGameInvitation_userNotFound_returnsNotFound() throws Exception {
+        User user = new User(); user.setId(1L);
+        GameInvitation invitation = new GameInvitation(); invitation.setId(1L); invitation.setTarget(user);
+
+        GameInvitationPutDTO dto = new GameInvitationPutDTO();
+        dto.setStatus(InvitationStatus.ACCEPTED);
+
+        given(userService.getUserByToken("test-token")).willReturn(Optional.of(user));
+        given(gameInvitationService.getGameInvitationById(1L)).willReturn(invitation);
+        doThrow(new UserNotFoundException("User not found")).when(gameInvitationService).updateGameInvitationStatus(any(), any());
+
+        mockMvc.perform(put("/games/invitations/1")
+                .header("Authorization", "test-token")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(asJsonString(dto)))
+            .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void updateGameInvitation_illegalArgument_returnsConflict() throws Exception {
+        User user = new User(); user.setId(1L);
+        GameInvitation invitation = new GameInvitation(); invitation.setId(1L); invitation.setTarget(user);
+
+        GameInvitationPutDTO dto = new GameInvitationPutDTO();
+        dto.setStatus(InvitationStatus.ACCEPTED);
+
+        given(userService.getUserByToken("test-token")).willReturn(Optional.of(user));
+        given(gameInvitationService.getGameInvitationById(1L)).willReturn(invitation);
+        doThrow(new IllegalArgumentException("Game is already full")).when(gameInvitationService).updateGameInvitationStatus(any(), any());
+
+        mockMvc.perform(put("/games/invitations/1")
+                .header("Authorization", "test-token")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(asJsonString(dto)))
+            .andExpect(status().isConflict());
+    }
+
+    @Test
+    void updateGameInvitation_unexpectedException_returnsInternalServerError() throws Exception {
+        User user = new User(); user.setId(1L);
+        GameInvitation invitation = new GameInvitation(); invitation.setId(1L); invitation.setTarget(user);
+
+        GameInvitationPutDTO dto = new GameInvitationPutDTO();
+        dto.setStatus(InvitationStatus.ACCEPTED);
+
+        given(userService.getUserByToken("test-token")).willReturn(Optional.of(user));
+        given(gameInvitationService.getGameInvitationById(1L)).willReturn(invitation);
+        doThrow(new RuntimeException("Unexpected error")).when(gameInvitationService).updateGameInvitationStatus(any(), any());
+
+        mockMvc.perform(put("/games/invitations/1")
+                .header("Authorization", "test-token")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(asJsonString(dto)))
+            .andExpect(status().isInternalServerError());
+    }
+
+    @Test
+    void updateGameInvitation_success_returnsOk() throws Exception {
+        User user = new User(); user.setId(1L);
+        GameInvitation invitation = new GameInvitation(); invitation.setId(1L); invitation.setTarget(user);
+
+        GameInvitationPutDTO dto = new GameInvitationPutDTO();
+        dto.setStatus(InvitationStatus.ACCEPTED);
+
+        given(userService.getUserByToken("test-token")).willReturn(Optional.of(user));
+        given(gameInvitationService.getGameInvitationById(1L)).willReturn(invitation);
+        // No exception thrown
+        // Optionally, you can mock the return value of updateGameInvitationStatus if needed
+
+        mockMvc.perform(put("/games/invitations/1")
+                .header("Authorization", "test-token")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(asJsonString(dto)))
+            .andExpect(status().isOk());
+    }   
+
+    @Test
+    void leaveGame_success() throws Exception {
+        Game game = new Game();
+        game.setId(1L);
+        User user = new User();
+        user.setId(123L);
+        game.addUser(user);
+
+        given(userService.getUserByToken("token")).willReturn(Optional.of(user));
+        given(gameService.getGameById(1L)).willReturn(Optional.of(game));
+        given(gameService.isUserInGame(game, user)).willReturn(true);
+
+        mockMvc.perform(put("/games/1/users/123/leave")
+                .header("Authorization", "token"))
+            .andExpect(status().isOk());
+    }
+
+    @Test
+    void leaveGame_invalidToken_returnsUnauthorized() throws Exception {
+        given(userService.getUserByToken("token")).willReturn(Optional.empty());
+
+        mockMvc.perform(put("/games/1/users/123/leave")
+                .header("Authorization", "token"))
+            .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void leaveGame_userNotInGame_returnsUnauthorized() throws Exception {
+        Game game = new Game();
+        game.setId(1L);
+        User user = new User();
+        user.setId(123L);
+
+        given(userService.getUserByToken("token")).willReturn(Optional.of(user));
+        given(gameService.getGameById(1L)).willReturn(Optional.of(game));
+        given(gameService.isUserInGame(game, user)).willReturn(false);
+
+        mockMvc.perform(put("/games/1/users/123/leave")
+                .header("Authorization", "token"))
+            .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void leaveGame_gameNotFound_returnsNotFound() throws Exception {
+        User user = new User();
+        user.setId(123L);
+
+        given(userService.getUserByToken("token")).willReturn(Optional.of(user));
+        given(gameService.getGameById(1L)).willReturn(Optional.empty());
+
+        mockMvc.perform(put("/games/1/users/123/leave")
+                .header("Authorization", "token"))
+            .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void leaveGame_userNotFoundException_returnsNotFound() throws Exception {
+        Game game = new Game();
+        game.setId(1L);
+        User user = new User();
+        user.setId(123L);
+        game.addUser(user);
+
+        given(userService.getUserByToken("token")).willReturn(Optional.of(user));
+        given(gameService.getGameById(1L)).willReturn(Optional.of(game));
+        given(gameService.isUserInGame(game, user)).willReturn(true);
+        doThrow(new UserNotFoundException("User not found")).when(gameService).leaveGame(game, user);
+
+        mockMvc.perform(put("/games/1/users/123/leave")
+                .header("Authorization", "token"))
+            .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void leaveGame_unexpectedException_returnsInternalServerError() throws Exception {
+        Game game = new Game();
+        game.setId(1L);
+        User user = new User();
+        user.setId(123L);
+        game.addUser(user);
+
+        given(userService.getUserByToken("token")).willReturn(Optional.of(user));
+        given(gameService.getGameById(1L)).willReturn(Optional.of(game));
+        given(gameService.isUserInGame(game, user)).willReturn(true);
+        doThrow(new RuntimeException("Unexpected")).when(gameService).leaveGame(game, user);
+
+        mockMvc.perform(put("/games/1/users/123/leave")
+                .header("Authorization", "token"))
+            .andExpect(status().isInternalServerError());
     }
 
     private String asJsonString(final Object object) {

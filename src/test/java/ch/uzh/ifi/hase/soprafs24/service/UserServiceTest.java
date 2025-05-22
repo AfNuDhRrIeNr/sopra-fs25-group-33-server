@@ -108,4 +108,106 @@ public class UserServiceTest {
     // then
     assertNull(authenticatedUser);
   }
+
+  @Test
+  public void updateUserStatus_setsStatusAndSaves() {
+      Mockito.when(userRepository.saveAndFlush(testUser)).thenReturn(testUser);
+
+      User updated = userService.updateUserStatus(testUser, UserStatus.IN_GAME);
+
+      assertEquals(UserStatus.IN_GAME, updated.getStatus());
+      Mockito.verify(userRepository).saveAndFlush(testUser);
+  }
+
+  @Test
+  public void checkAndAddFriend_addsFriendIfNotPresent() {
+      User friend = new User();
+      friend.setId(2L);
+      friend.setUsername("friend");
+      testUser.setFriends(new java.util.ArrayList<>());
+      friend.setFriends(new java.util.ArrayList<>());
+
+      Mockito.when(userRepository.saveAndFlush(testUser)).thenReturn(testUser);
+      Mockito.when(userRepository.saveAndFlush(friend)).thenReturn(friend);
+
+      userService.checkAndAddFriend(testUser, friend);
+
+      assertTrue(testUser.getFriends().contains(friend));
+      assertTrue(friend.getFriends().contains(testUser));
+  }
+
+  @Test
+  public void checkAndAddFriend_nullSender_throwsException() {
+      User friend = new User();
+      friend.setId(2L);
+      assertThrows(IllegalArgumentException.class, () -> userService.checkAndAddFriend(null, friend));
+  }
+
+  @Test
+  public void checkAndAddFriend_nullTarget_throwsException() {
+      assertThrows(IllegalArgumentException.class, () -> userService.checkAndAddFriend(testUser, null));
+  }
+
+  @Test
+  public void checkAndAddFriend_addYourself_throwsException() {
+      assertThrows(IllegalArgumentException.class, () -> userService.checkAndAddFriend(testUser, testUser));
+  }
+
+  @Test
+  public void getUserById_returnsUser() {
+      Mockito.when(userRepository.findById(1L)).thenReturn(java.util.Optional.of(testUser));
+      assertTrue(userService.getUserById(1L).isPresent());
+  }
+
+  @Test
+  public void getUserByToken_returnsUser() {
+      Mockito.when(userRepository.findByToken("token")).thenReturn(java.util.Optional.of(testUser));
+      assertTrue(userService.getUserByToken("token").isPresent());
+  }
+
+  @Test
+  public void getUserByUsername_returnsUser() {
+      Mockito.when(userRepository.findByUsername("testUsername")).thenReturn(testUser);
+      User found = userService.getUserByUsername("testUsername");
+      assertEquals(testUser, found);
+  }
+
+  @Test
+  public void getUsers_returnsAllUsers() {
+      java.util.List<User> users = java.util.List.of(testUser);
+      Mockito.when(userRepository.findAll()).thenReturn(users);
+      assertEquals(users, userService.getUsers());
+  }
+
+  @Test
+  public void createUser_emptyUsername_throwsException() {
+      User user = new User();
+      user.setUsername("");
+      user.setPassword("pw");
+      assertThrows(ResponseStatusException.class, () -> userService.createUser(user));
+  }
+
+  @Test
+  public void createUser_nullUsername_throwsException() {
+      User user = new User();
+      user.setUsername(null);
+      user.setPassword("pw");
+      assertThrows(ResponseStatusException.class, () -> userService.createUser(user));
+  }
+
+  @Test
+  public void createUser_emptyPassword_throwsException() {
+      User user = new User();
+      user.setUsername("user");
+      user.setPassword("");
+      assertThrows(ResponseStatusException.class, () -> userService.createUser(user));
+  }
+
+  @Test
+  public void createUser_nullPassword_throwsException() {
+      User user = new User();
+      user.setUsername("user");
+      user.setPassword(null);
+      assertThrows(ResponseStatusException.class, () -> userService.createUser(user));
+  }
 }

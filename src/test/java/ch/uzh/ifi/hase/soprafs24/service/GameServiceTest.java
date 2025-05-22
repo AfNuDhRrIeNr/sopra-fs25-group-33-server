@@ -17,6 +17,7 @@ import org.mockito.MockitoAnnotations;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -282,4 +283,167 @@ public class GameServiceTest {
         assertEquals(0, letterCountD); // Default value for missing letter
     }
 
+    @Test
+    void joinGame_validInput_addsUserAndSaves() throws Exception {
+        User user = new User(); user.setId(99L);
+        Game game = new Game(); game.setId(2L); game.setUsers(new ArrayList<>());
+        when(gameRepository.findById(game.getId())).thenReturn(Optional.of(game));
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(gameRepository.saveAndFlush(game)).thenReturn(game);
+
+        Game result = gameService.joinGame(game, user);
+
+        assertTrue(game.getUsers().contains(user));
+        verify(gameRepository).saveAndFlush(game);
+    }
+
+    @Test
+    void joinGame_gameNotFound_throwsException() {
+        User user = new User(); user.setId(99L);
+        Game game = new Game(); game.setId(2L);
+        when(gameRepository.findById(game.getId())).thenReturn(Optional.empty());
+
+        assertThrows(GameNotFoundException.class, () -> gameService.joinGame(game, user));
+    }
+
+    @Test
+    void joinGame_userNotFound_throwsException() {
+        User user = new User(); user.setId(99L);
+        Game game = new Game(); game.setId(2L);
+        when(gameRepository.findById(game.getId())).thenReturn(Optional.of(game));
+        when(userRepository.findById(user.getId())).thenReturn(Optional.empty());
+
+        assertThrows(UserNotFoundException.class, () -> gameService.joinGame(game, user));
+    }
+
+    @Test
+    void leaveGame_validInput_removesUserAndSaves() throws Exception {
+        User user = new User(); user.setId(99L);
+        Game game = new Game(); game.setId(2L); game.setUsers(new ArrayList<>(List.of(user)));
+        when(gameRepository.findById(game.getId())).thenReturn(Optional.of(game));
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(gameRepository.saveAndFlush(game)).thenReturn(game);
+
+        Game result = gameService.leaveGame(game, user);
+
+        assertFalse(game.getUsers().contains(user));
+        verify(gameRepository).saveAndFlush(game);
+    }
+
+    @Test
+    void leaveGame_gameNotFound_throwsException() {
+        User user = new User(); user.setId(99L);
+        Game game = new Game(); game.setId(2L);
+        when(gameRepository.findById(game.getId())).thenReturn(Optional.empty());
+
+        assertThrows(GameNotFoundException.class, () -> gameService.leaveGame(game, user));
+    }
+
+    @Test
+    void leaveGame_userNotFound_throwsException() {
+        User user = new User(); user.setId(99L);
+        Game game = new Game(); game.setId(2L);
+        when(gameRepository.findById(game.getId())).thenReturn(Optional.of(game));
+        when(userRepository.findById(user.getId())).thenReturn(Optional.empty());
+
+        assertThrows(UserNotFoundException.class, () -> gameService.leaveGame(game, user));
+    }
+
+    @Test 
+    void leaveGame_guestChangedToHost() throws Exception{
+        User user = new User(); user.setId(99L);
+        User guest = new User(); guest.setId(100L);
+        Game game = new Game(); game.setId(2L); game.setUsers(new ArrayList<>(List.of(user, guest))); game.setHost(user);
+        when(gameRepository.findById(game.getId())).thenReturn(Optional.of(game));
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(gameRepository.saveAndFlush(game)).thenReturn(game);
+
+        Game result = gameService.leaveGame(game, user);
+
+        assertEquals(guest, result.getHost());
+        verify(gameRepository).saveAndFlush(game);
+    }
+
+    @Test
+    void isUserInGame_validUserInGame_returnsTrue() {
+        User user = new User(); user.setId(99L);
+        Game game = new Game(); game.setId(2L); game.setUsers(new ArrayList<>(List.of(user)));
+        when(gameRepository.findById(game.getId())).thenReturn(Optional.of(game));
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+
+        assertTrue(gameService.isUserInGame(game, user));
+    }
+
+    @Test
+    void isUserInGame_userNotInGame_returnsFalse() {
+        User user = new User(); user.setId(99L);
+        Game game = new Game(); game.setId(2L); game.setUsers(new ArrayList<>());
+        when(gameRepository.findById(game.getId())).thenReturn(Optional.of(game));
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+
+        assertFalse(gameService.isUserInGame(game, user));
+    }
+
+    @Test
+    void isUserInGame_gameNotFound_returnsFalse() {
+        User user = new User(); user.setId(99L);
+        Game game = new Game(); game.setId(2L);
+        when(gameRepository.findById(game.getId())).thenReturn(Optional.empty());
+
+        assertFalse(gameService.isUserInGame(game, user));
+    }
+
+    @Test
+    void isUserInGame_userNotFound_returnsFalse() {
+        User user = new User(); user.setId(99L);
+        Game game = new Game(); game.setId(2L);
+        when(gameRepository.findById(game.getId())).thenReturn(Optional.of(game));
+        when(userRepository.findById(user.getId())).thenReturn(Optional.empty());
+
+        assertFalse(gameService.isUserInGame(game, user));
+    }
+
+    @Test
+    void skipTurn_validInput_switchesHostTurn() throws Exception {
+        Game game = new Game();
+        game.setId(2L);
+        User host = new User(); host.setId(1L);
+        game.setHost(host);
+        game.setHostTurn(true);
+
+        when(gameRepository.findById(game.getId())).thenReturn(Optional.of(game));
+        when(gameRepository.saveAndFlush(game)).thenReturn(game);
+
+        boolean isHostTurn = gameService.skipTurn(game.getId(), host.getId());
+
+        assertFalse(isHostTurn); // Should switch turn
+        verify(gameRepository).saveAndFlush(game);
+    }
+
+    @Test
+    void skipTurn_gameNotFound_throwsException() {
+        when(gameRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThrows(GameNotFoundException.class, () -> gameService.skipTurn(99L, 1L));
+    }
+
+    @Test
+    void changeUserTurn_switchesTurnAndReturnsCorrectUser() {
+        Game game = new Game();
+        game.setId(2L);
+        User host = new User(); host.setId(1L);
+        User user2 = new User(); user2.setId(2L);
+        game.setHost(host);
+        game.setUsers(new ArrayList<>(List.of(host, user2)));
+        game.setHostTurn(true);
+
+        when(gameRepository.findByIdWithUsers(game.getId())).thenReturn(Optional.of(game));
+        when(gameRepository.saveAndFlush(game)).thenReturn(game);
+
+        User nextUser = gameService.changeUserTurn(game);
+
+        assertFalse(game.isHostTurn());
+        assertEquals(user2, nextUser);
+        verify(gameRepository).saveAndFlush(game);
+    }
 }

@@ -8,6 +8,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
+import ch.uzh.ifi.hase.soprafs24.constant.BoardStatus;
 
 import java.util.List;
 import java.util.Optional;
@@ -265,5 +266,15 @@ class MoveSubmitServiceTest {
         assertEquals(expectedScore, score);
  
     
+    }
+
+    @Test
+    void testGetMultiplierOutOfBounds() {
+        // Negative indices
+        assertEquals(BoardStatus.NORMAL, BoardStatus.getMultiplier(-1, 0));
+        assertEquals(BoardStatus.NORMAL, BoardStatus.getMultiplier(0, -1));
+        // Indices >= BOARD_SIZE
+        assertEquals(BoardStatus.NORMAL, BoardStatus.getMultiplier(15, 0));
+        assertEquals(BoardStatus.NORMAL, BoardStatus.getMultiplier(0, 15));
     }
 }
